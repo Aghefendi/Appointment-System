@@ -14,7 +14,7 @@ const LoginScreen = ({ navigation }) => {
         console.log(Alert.alert("Giriş Yapıldı"));
       })
       .catch((err) => {
-        console.log(Alert.alert(err));
+        console.log(Alert.alert("Yanlış kullanıcı adı veya şifre"));
       });
   };
 

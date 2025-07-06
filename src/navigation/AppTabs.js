@@ -11,7 +11,7 @@ const Tab = createBottomTabNavigator();
 
 const AppTabs = () => {
   return (
-    <Tab.Navigator screenOptions={{headerShown:false}}>
+    <Tab.Navigator screenOptions={{headerShown:false, tabBarStyle: { height:60} }}>
       <Tab.Screen
         name="Home"
         component={HomeScreen}

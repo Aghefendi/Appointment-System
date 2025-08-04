@@ -1,37 +1,44 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Button, Alert,ActivityIndicator} from "react-native";
+import { View, StyleSheet, ActivityIndicator } from "react-native";
 import auth from "@react-native-firebase/auth";
 import { NavigationContainer } from "@react-navigation/native";
 import AppStack from "./src/navigation/AppStack";
 import AuthStack from "./src/navigation/AuthStack";
-import { StatusBar } from "expo-status-bar";
+import { Provider } from "react-redux";
+import store from "./src/store/store";
 
 export default function App() {
-  const [initialization, setinitilization] = useState(true);
-  const [user, setuser] = useState();
-
-  function onAuthStateChanges(user) {
-    setuser(user);
-    if (initialization) setinitilization(false);
-  }
+  // Daha açıklayıcı isimler kullanıyoruz
+  const [initializing, setInitializing] = useState(true);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const subscribe = auth().onAuthStateChanged(onAuthStateChanges);
-    return subscribe;
-  }, []);
+    // onAuthStateChanged aboneliğini oluşturalım
+    const unsubscribe = auth().onAuthStateChanged((usr) => {
+      setUser(usr);
+      if (initializing) {
+        setInitializing(false);
+      }
+    });
+    // Cleanup olarak aboneliği kapat
+    return unsubscribe;
+  }, [initializing]);
 
-  if (initialization)
+  // Yüklenme sürecinde ortak bir style kullanalım
+  if (initializing) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <View style={styles.container}>
         <ActivityIndicator size="large" color="#0000ff" />
       </View>
     );
+  }
 
   return (
-    <NavigationContainer>
-      <StatusBar barStyle="dark-content" />
-      {user ? <AppStack /> : <AuthStack />}
-    </NavigationContainer>
+    <Provider store={store}>
+      <NavigationContainer>
+        {user ? <AppStack /> : <AuthStack />}
+      </NavigationContainer>
+    </Provider>
   );
 }
 

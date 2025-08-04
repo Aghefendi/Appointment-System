@@ -9,123 +9,168 @@ import {
 } from "react-native";
 import auth from "@react-native-firebase/auth";
 import firestore from "@react-native-firebase/firestore";
+import { useSelector } from "react-redux";
+import Animated, {
+  FadeInDown,
+  FadeInUp,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from "react-native-reanimated";
 
 const ProfileScreen = () => {
-  const [loading, setLoading] = useState(true); // Veri yüklenirken bekleme durumu için
-  const [userData, setUserData] = useState(null); // Çekilen kullanıcı verisini tutmak için
+  const [loading, setLoading] = useState(true);
+  const [userData, setUserData] = useState(null);
+  const theme = useSelector((state) => state.theme.theme);
+  const styles = createStyles(theme);
 
-  // Bu fonksiyon, veriyi Firestore'dan çekecek
-  const fetchUserData = () => {
-    const user = auth().currentUser; // Mevcut kullanıcıyı al
+  // Logout butonu için scale animasyonu
+  const scale = useSharedValue(1);
+  const animatedBtnStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
 
-    if (user) {
-      const subscriber = firestore()
-        .collection("users")
-        .doc(user.uid)
-        .onSnapshot(
-          (documentSnapshot) => {
-            if (documentSnapshot.exists) {
-              console.log("Kullanıcı verisi: ", documentSnapshot.data());
-              setUserData(documentSnapshot.data());
-            } else {
-              console.log("Kullanıcı dökümanı bulunamadı!");
-            }
-            setLoading(false);
-          },
-          (error) => {
-            console.error("Veri çekme hatası: ", error);
-            setLoading(false);
-          }
-        );
-
-      // Component kapandığında listener'ı temizle
-      return () => subscriber();
-    }
+  const onPressIn = () => {
+    scale.value = withSpring(0.9, { stiffness: 200, damping: 10 });
+  };
+  const onPressOut = () => {
+    scale.value = withSpring(1, { stiffness: 200, damping: 10 });
   };
 
   useEffect(() => {
-    fetchUserData();
+    const user = auth().currentUser;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    const sub = firestore()
+      .collection("users")
+      .doc(user.uid)
+      .onSnapshot(
+        (snap) => {
+          setUserData(snap.exists ? snap.data() : null);
+          setLoading(false);
+        },
+        (err) => {
+          console.error(err);
+          Alert.alert("Hata", "Kullanıcı verisi alınırken hata oluştu.");
+          setLoading(false);
+        }
+      );
+    return () => sub();
   }, []);
 
-  // Çıkış yapma fonksiyonu
   const handleLogout = () => {
     auth()
       .signOut()
-      .then(() => console.log("Kullanıcı çıkış yaptı!"))
-      .catch((error) =>
-        Alert.alert("Hata", "Çıkış yaparken bir sorun oluştu.")
-      );
+      .then(() => console.log("Çıkış yapıldı"))
+      .catch(() => Alert.alert("Hata", "Çıkış yaparken sorun oluştu."));
   };
 
-  // Veri hala yükleniyorsa, bir yüklenme göstergesi gösterelim
   if (loading) {
     return (
       <ActivityIndicator
         size="large"
-        color="#0000ff"
+        color={theme.primary || "#0000ff"}
         style={{ flex: 1, justifyContent: "center" }}
       />
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Profilim</Text>
+    <Animated.View
+      entering={FadeInUp.duration(500)}
+      style={styles.container}
+    >
+      <Animated.Text
+        entering={FadeInDown.delay(100).duration(400)}
+        style={styles.title}
+      >
+        Profilim
+      </Animated.Text>
+
       {userData ? (
-        <View style={styles.infoContainer}>
+        <Animated.View
+          entering={FadeInDown.delay(200).duration(400)}
+          style={styles.infoContainer}
+        >
           <Text style={styles.label}>E-posta Adresiniz:</Text>
           <Text style={styles.info}>{userData.email}</Text>
 
-          {/* İleride ekleyeceğiniz diğer bilgiler için örnek */}
           <Text style={styles.label}>Ad Soyad:</Text>
           <Text style={styles.info}>
             {userData.fullName || "Henüz belirtilmemiş"}
           </Text>
-        </View>
+        </Animated.View>
       ) : (
-        <Text>Kullanıcı bilgileri yüklenemedi.</Text>
+        <Text style={styles.errorText}>
+          Kullanıcı bilgileri yüklenemedi.
+        </Text>
       )}
 
-      <Button title="Çıkış Yap" onPress={handleLogout} color="#e74c3c" />
-    </View>
+      <Animated.View
+        style={[styles.logoutWrapper, animatedBtnStyle]}
+      >
+        <Button
+          title="Çıkış Yap"
+          onPress={handleLogout}
+          color={theme.error || "#e74c3c"}
+          onPressIn={onPressIn}
+          onPressOut={onPressOut}
+        />
+      </Animated.View>
+    </Animated.View>
   );
 };
 
 export default ProfileScreen;
 
-// Basit stil tanımlamaları
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-    backgroundColor: "#f5f5f5",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
-  infoContainer: {
-    width: "100%",
-    padding: 15,
-    backgroundColor: "white",
-    borderRadius: 10,
-    marginBottom: 30,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  label: {
-    fontSize: 16,
-    color: "#888",
-  },
-  info: {
-    fontSize: 18,
-    fontWeight: "500",
-    marginBottom: 15,
-  },
-});
+const createStyles = (theme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 20,
+      backgroundColor: theme.backgroundColor,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    title: {
+      fontSize: 26,
+      fontWeight: "700",
+      marginBottom: 20,
+      color: theme.color,
+    },
+    infoContainer: {
+      width: "100%",
+      padding: 20,
+      backgroundColor: theme.cardBackground || "#fff",
+      borderRadius: 12,
+      marginBottom: 30,
+      shadowColor: theme.shadowColor || "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 6,
+      elevation: 4,
+    },
+    label: {
+      fontSize: 14,
+      color: theme.subtleText || "#666",
+      marginTop: 10,
+    },
+    info: {
+      fontSize: 18,
+      fontWeight: "500",
+      color: theme.color,
+      marginTop: 4,
+    },
+    errorText: {
+      fontSize: 16,
+      color: theme.error || "#e74c3c",
+      marginBottom: 30,
+    },
+    logoutWrapper: {
+      width: "60%",
+      borderRadius: 8,
+      overflow: "hidden",
+    },
+  });

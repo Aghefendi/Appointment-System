@@ -1,23 +1,91 @@
-import { StyleSheet, Text, View } from 'react-native'
-import React from 'react'
+import React, { useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  Pressable,
+  StyleSheet,
+  Animated,
+  Easing,
+  SafeAreaView,
+} from "react-native";
+import { useSelector, useDispatch } from "react-redux";
+import Octicons from "react-native-vector-icons/Octicons";
+import { toggleTheme } from "../store/themeSlice";
 
 const HomeScreen = () => {
+  const { theme, colorScheme } = useSelector((state) => state.theme);
+  const dispatch = useDispatch();
+  const spinAnim = useRef(new Animated.Value(0)).current; // 0 ➔ 1 dönüş
+  const fadeAnim = useRef(new Animated.Value(0)).current; // 0 ➔ 1 opaklık
+
+  useEffect(() => {
+    // Bileşen açıldığında fade-in
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      easing: Easing.out(Easing.exp),
+      useNativeDriver: true,
+    }).start();
+  }, [fadeAnim]);
+
+  const onToggle = () => {
+    // Tema değiştir, sonra ikonu döndür
+    dispatch(toggleTheme());
+    spinAnim.setValue(0);
+    Animated.timing(spinAnim, {
+      toValue: 1,
+      duration: 500,
+      easing: Easing.out(Easing.circle),
+      useNativeDriver: true,
+    }).start();
+  };
+
+  // 0–>1 değerini 0deg–>360deg’e çevir
+  const spin = spinAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "360deg"],
+  });
+
+  const styles = createStyle(theme);
+
   return (
-    <View style={styles.container}>
-      <Text>HomeScreen</Text>
-    </View>
-  )
-}
+    <SafeAreaView style={styles.container}>
+      <Animated.View style={{ opacity: fadeAnim }}>
+        <Text style={[styles.title, { color: theme.color }]}>HomeScreen</Text>
+      </Animated.View>
 
-export default HomeScreen
+      <Pressable onPress={onToggle} style={styles.button}>
+        <Animated.View style={{ transform: [{ rotate: spin }] }}>
+          <Octicons
+            name={colorScheme === "dark" ? "moon" : "sun"}
+            size={32}
+            color={theme.color}
+          />
+        </Animated.View>
+      </Pressable>
+    </SafeAreaView>
+  );
+};
 
-const styles = StyleSheet.create({
+export default HomeScreen;
 
-
-   container: {
-   flex: 1,
-    padding: 10,
-    marginTop: 40,
-    alignItems: 'center',
-  },
-})
+const createStyle = (theme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 16,
+      backgroundColor: theme.backgroundColor,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: "600",
+      marginBottom: 24,
+    },
+    button: {
+      padding: 12,
+      borderRadius: 30,
+      backgroundColor: theme.buttonBg || "rgba(0,0,0,0.1)",
+    },
+  });

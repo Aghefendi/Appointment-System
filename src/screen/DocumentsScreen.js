@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
   Button,
-  FlatList,
   StyleSheet,
   Alert,
   TouchableOpacity,
-  ActivityIndicator, // Hata almamak için import ettik
-  Linking, // Dosyayı açmak için eklendi
+  ActivityIndicator,
+  Linking,
 } from "react-native";
 import firestore from "@react-native-firebase/firestore";
 import storage from "@react-native-firebase/storage";
 import auth from "@react-native-firebase/auth";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 
 const DocumentsScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
@@ -20,39 +20,31 @@ const DocumentsScreen = ({ navigation }) => {
 
   useEffect(() => {
     const user = auth().currentUser;
-
-    // Kullanıcı oturumu kontrolü
     if (!user) {
       setLoading(false);
       return;
     }
 
-    // Firestore'dan evrakları anlık olarak dinle
     const subscriber = firestore()
       .collection("users")
       .doc(user.uid)
       .collection("documents")
       .orderBy("createdAt", "desc")
       .onSnapshot(
-        (querySnapshot) => {
-          const docsData = [];
-          querySnapshot.forEach((doc) => {
-            docsData.push({ ...doc.data(), id: doc.id });
-          });
-          setDocuments(docsData);
+        (qs) => {
+          const docs = [];
+          qs.forEach((doc) => docs.push({ id: doc.id, ...doc.data() }));
+          setDocuments(docs);
           setLoading(false);
         },
-        (error) => {
-          console.error("Evrakları listelerken hata: ", error);
+        (err) => {
+          console.error(err);
           setLoading(false);
         }
       );
-
-    // Component kapandığında dinleyiciyi sonlandır
     return () => subscriber();
   }, []);
 
-  // Evrak silme fonksiyonu
   const handleDelete = (document) => {
     Alert.alert(
       "Evrağı Sil",
@@ -61,53 +53,51 @@ const DocumentsScreen = ({ navigation }) => {
         { text: "İptal", style: "cancel" },
         {
           text: "Sil",
+          style: "destructive",
           onPress: async () => {
             try {
-              const storageRef = storage().ref(document.storagePath);
-              await storageRef.delete();
-
-              const userId = auth().currentUser.uid;
+              await storage().ref(document.storagePath).delete();
               await firestore()
                 .collection("users")
-                .doc(userId)
+                .doc(auth().currentUser.uid)
                 .collection("documents")
                 .doc(document.id)
                 .delete();
             } catch (error) {
-              console.error("Silme hatası: ", error);
-              Alert.alert("Hata", "Evrak silinirken bir sorun oluştu.");
+              console.error(error);
+              Alert.alert("Hata", "Silme sırasında bir sorun oluştu.");
             }
           },
-          style: "destructive",
         },
       ]
     );
   };
 
-  // Listedeki her bir evrakın nasıl görüneceğini belirleyen component
-  const renderDocument = ({ item }) => (
-    <TouchableOpacity
+  const renderItem = ({ item, index }) => (
+    <Animated.View
+      entering={FadeInDown.duration(400).delay(index * 100)}
       style={styles.itemContainer}
-      onPress={() =>
-        Linking.openURL(item.downloadURL).catch((err) => {
-          console.error("Dosya açılırken hata: ", err);
-          Alert.alert("Hata", "Dosya açılamadı. Lütfen tekrar deneyin.");
-        })
-      } // Tıklayınca dosyayı aç
     >
-      <View style={{ flex: 1 }}>
+      <TouchableOpacity
+        style={{ flex: 1 }}
+        onPress={() =>
+          Linking.openURL(item.downloadURL).catch(() =>
+            Alert.alert("Hata", "Dosya açılamadı.")
+          )
+        }
+      >
         <Text style={styles.itemTitle}>{item.name}</Text>
         <Text style={styles.itemType}>
           {new Date(item.createdAt?.toDate()).toLocaleDateString()}
         </Text>
-      </View>
+      </TouchableOpacity>
       <TouchableOpacity
         onPress={() => handleDelete(item)}
         style={styles.deleteButton}
       >
         <Text style={styles.deleteButtonText}>Sil</Text>
       </TouchableOpacity>
-    </TouchableOpacity>
+    </Animated.View>
   );
 
   if (loading) {
@@ -115,23 +105,23 @@ const DocumentsScreen = ({ navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
+    // Tüm listeyi yukarıdan fade-in ile getir
+    <Animated.View entering={FadeInUp.duration(500)} style={styles.container}>
       <Button
         title="+ Yeni Evrak Yükle"
-        onPress={() => navigation.navigate("UploadDocument")} // Doğru ekran adına yönlendirdiğinizden emin olun
+        onPress={() => navigation.navigate("UploadDocument")}
       />
-      <FlatList
-        data={documents}
-        renderItem={renderDocument}
-        keyExtractor={(item) => item.id}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>
-            Henüz yüklenmiş evrağınız bulunmuyor.
-          </Text>
-        }
-        contentContainerStyle={{ paddingTop: 20 }}
-      />
-    </View>
+      {documents.length === 0 ? (
+        <Text style={styles.emptyText}>Henüz yüklenmiş evrağınız yok.</Text>
+      ) : (
+        <Animated.FlatList
+          data={documents}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingTop: 20 }}
+        />
+      )}
+    </Animated.View>
   );
 };
 

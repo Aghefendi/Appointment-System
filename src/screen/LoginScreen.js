@@ -1,70 +1,122 @@
-import { StyleSheet, Text, View, TextInput, Button, Alert } from "react-native";
-import React from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  Alert,
+} from "react-native";
+import React, { useState } from "react";
 import auth from "@react-native-firebase/auth";
-import { useState } from "react";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import imgTop from "../../assets/background.png";
+import imgLight from "../../assets/light.png"; // imgBottom yerine light kullandım
+import { styles } from "./styles/LoginStyle";
 
 const LoginScreen = ({ navigation }) => {
-  const [user, userSet] = useState("");
-  const [pass, passSet] = useState("");
+  const [user, setUser] = useState("");
+  const [pass, setPass] = useState("");
 
-  const handleLogin = (user, pass) => {
+  const handleLogin = (email, password) => {
+    if (!email || !password) {
+      Alert.alert("Lütfen tüm alanları doldurun");
+      return;
+    }
+
     auth()
-      .signInWithEmailAndPassword(user, pass)
+      .signInWithEmailAndPassword(email, password)
       .then(() => {
-        console.log(Alert.alert("Giriş Yapıldı"));
+        Alert.alert("Giriş Başarılı");
+        console.log("Kullanıcı Giriş Yaptı");
       })
       .catch((err) => {
-        console.log(Alert.alert("Yanlış kullanıcı adı veya şifre"));
+        console.error(err);
+        Alert.alert("Giriş Hatası", "E-posta veya şifre hatalı.");
       });
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.TextCs}>Email:</Text>
-      <TextInput style={styles.textInput} value={user} onChangeText={userSet} />
-      <Text style={styles.TextCs}>Şifre:</Text>
-      <TextInput
-        style={styles.textInput}
-        value={pass}
-        onChangeText={passSet}
-        secureTextEntry
-      />
-
-      <View style={styles.buttonWrapper}>
-        <Button onPress={() => handleLogin(user, pass)} title="Giriş Yap" />
-      </View>
-      <View style={styles.buttonWrapper}>
-        <Button
-          title="KAyıt ol"
-          onPress={() => navigation.navigate("Register")}
+      {/* Arka Plan ve Işık Efektleri */}
+      <Image source={imgTop} style={styles.imageBG} />
+      <View style={styles.contentTop}>
+        <Animated.Image
+          entering={FadeInUp.delay(200).duration(1000).springify().damping(5)}
+          source={imgLight}
+          style={styles.imgLight1}
         />
+        <Animated.Image
+          entering={FadeInUp.delay(400).duration(1000).springify().damping(5)}
+          source={imgLight}
+          style={styles.imgLight2}
+        />
+      </View>
+
+      {/* Giriş Alanı */}
+      <View style={styles.main}>
+        <View style={styles.login}>
+          <Animated.Text
+            entering={FadeInUp.duration(1000).springify()}
+            style={styles.loginText}
+          >
+            Login
+          </Animated.Text>
+        </View>
+
+        <View style={styles.form}>
+          <Animated.View
+            entering={FadeInDown.duration(1000).springify()}
+            style={styles.formInputArea}
+          >
+            <TextInput
+              placeholder="E-mail"
+              placeholderTextColor={"gray"}
+              value={user}
+              onChangeText={setUser}
+              style={styles.input}
+            />
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInDown.delay(200).duration(1000).springify()}
+            style={styles.formInputArea}
+          >
+            <TextInput
+              placeholder="Şifre"
+              placeholderTextColor={"gray"}
+              secureTextEntry
+              value={pass}
+              onChangeText={setPass}
+              style={styles.input}
+            />
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInDown.delay(400).duration(1000).springify()}
+            style={styles.formButtonArea}
+          >
+            <TouchableOpacity
+              style={styles.formButton}
+              onPress={() => handleLogin(user, pass)}
+            >
+              <Text style={styles.formButtonText}>Giriş Yap</Text>
+            </TouchableOpacity>
+          </Animated.View>
+
+          <Animated.View
+            entering={FadeInDown.delay(600).duration(1000).springify()}
+            style={styles.formFooter}
+          >
+            <Text>Hesabın yok mu?</Text>
+            <TouchableOpacity onPress={() => navigation.navigate("Register")}>
+              <Text style={styles.formFooterSingup}>Kayıt Ol</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
       </View>
     </View>
   );
 };
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#ddd",
-    marginTop: 30,
-    padding: 50,
-  },
-  TextCs: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginTop: 10,
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: "#333",
-    padding: 10,
-    marginVertical: 8,
-    borderRadius: 5,
-    backgroundColor: "#fff",
-  },
-  buttonWrapper: {
-    marginVertical: 10,
-  },
-});
 
 export default LoginScreen;

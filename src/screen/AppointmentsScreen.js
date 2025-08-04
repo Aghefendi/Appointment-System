@@ -11,39 +11,32 @@ import {
 } from "react-native";
 import firestore from "@react-native-firebase/firestore";
 import auth from "@react-native-firebase/auth";
-import moment from "moment"; // Tarihi formatlamak için moment'ı burada da import ediyoruz
-import "moment/locale/tr"; // Tarihleri Türkçe göstermek için (isteğe bağlı)
+import moment from "moment";
+import "moment/locale/tr";
+import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 
 const AppointmentsScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState([]);
 
   useEffect(() => {
-    moment.locale("tr"); // Moment'ı Türkçe'ye ayarla
+    moment.locale("tr");
     const user = auth().currentUser;
     const subscriber = firestore()
       .collection("users")
       .doc(user.uid)
       .collection("appointments")
-      .orderBy("appointmentDate", "asc") // Randevuları tarihe göre sıralayalım (en yakın olan en üstte)
-      .onSnapshot((querySnapshot) => {
-        const appointmentsData = [];
-        querySnapshot.forEach((documentSnapshot) => {
-          appointmentsData.push({
-            ...documentSnapshot.data(),
-            id: documentSnapshot.id,
-          });
-        });
-
-        setAppointments(appointmentsData);
+      .orderBy("appointmentDate", "asc")
+      .onSnapshot((qs) => {
+        const data = [];
+        qs.forEach((doc) => data.push({ id: doc.id, ...doc.data() }));
+        setAppointments(data);
         setLoading(false);
       });
-
     return () => subscriber();
   }, []);
 
   const handleDelete = (appointmentId) => {
-    // ... Silme fonksiyonu aynı kalabilir ...
     Alert.alert(
       "Randevuyu Sil",
       "Bu randevuyu silmek istediğinizden emin misiniz?",
@@ -51,37 +44,36 @@ const AppointmentsScreen = ({ navigation }) => {
         { text: "İptal", style: "cancel" },
         {
           text: "Sil",
-          onPress: () => {
-            const userId = auth().currentUser.uid;
+          style: "destructive",
+          onPress: () =>
             firestore()
               .collection("users")
-              .doc(userId)
+              .doc(auth().currentUser.uid)
               .collection("appointments")
               .doc(appointmentId)
-              .delete();
-          },
-          style: "destructive",
+              .delete(),
         },
       ]
     );
   };
 
-  // === RENDER FONKSİYONUNU GÜNCELLEYELİM ===
-  const renderAppointment = ({ item }) => {
-    // Firestore'dan gelen Timestamp objesini JavaScript Date objesine çeviriyoruz.
-    const date = item.appointmentDate ? item.appointmentDate.toDate() : null;
-
+  const renderAppointment = ({ item, index }) => {
+    const date = item.appointmentDate?.toDate();
     return (
-      <View style={styles.itemContainer}>
+      <Animated.View
+        entering={FadeInDown.duration(400).delay(index * 100)}
+        style={styles.itemContainer}
+      >
         <View style={{ flex: 1 }}>
-          {/* Tarihi formatlayarak gösteriyoruz */}
           {date && (
             <Text style={styles.itemDate}>
               {moment(date).format("DD MMMM YYYY, HH:mm")}
             </Text>
           )}
           <Text style={styles.itemTitle}>{item.title}</Text>
-          <Text style={styles.itemNotes}>{item.notes}</Text>
+          {item.notes ? (
+            <Text style={styles.itemNotes}>{item.notes}</Text>
+          ) : null}
         </View>
         <View style={styles.buttonsContainer}>
           <TouchableOpacity
@@ -99,68 +91,84 @@ const AppointmentsScreen = ({ navigation }) => {
             <Text style={styles.actionButtonText}>Sil</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </Animated.View>
     );
   };
 
   if (loading) {
-    return <ActivityIndicator size="large" />;
+    return <ActivityIndicator size="large" style={styles.loader} />;
   }
 
   return (
-    <View style={styles.container}>
+    <Animated.View entering={FadeInUp.duration(500)} style={styles.container}>
       <Button
         title="+ Yeni Randevu Ekle"
         onPress={() => navigation.navigate("AddAppointment")}
       />
-      <FlatList
-        data={appointments}
-        renderItem={renderAppointment}
-        keyExtractor={(item) => item.id}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>Henüz randevunuz bulunmuyor.</Text>
-        }
-        contentContainerStyle={{ paddingTop: 20 }}
-      />
-    </View>
+      {appointments.length === 0 ? (
+        <Text style={styles.emptyText}>Henüz randevunuz bulunmuyor.</Text>
+      ) : (
+        <FlatList
+          data={appointments}
+          renderItem={renderAppointment}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingTop: 20, paddingBottom: 30 }}
+        />
+      )}
+    </Animated.View>
   );
 };
 
 export default AppointmentsScreen;
 
-// === STYLESHEET'İ GÜNCELLEYELİM ===
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 10,
     backgroundColor: "#f5f5f5",
     marginTop: 30,
+    paddingHorizontal: 10,
   },
+  loader: { flex: 1, justifyContent: "center" },
   itemContainer: {
     backgroundColor: "white",
     padding: 15,
     borderRadius: 8,
-    marginBottom: 10,
+    marginBottom: 12,
     elevation: 3,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   itemDate: {
     fontSize: 14,
     fontWeight: "bold",
     color: "#2980b9",
-    marginBottom: 5,
+    marginBottom: 4,
   },
-  itemTitle: { fontSize: 18, fontWeight: "bold", color: "#34495e" },
-  itemNotes: { fontSize: 14, color: "#7f8c8d", marginTop: 5 },
-  emptyText: { textAlign: "center", marginTop: 50, fontSize: 16 },
+  itemTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#34495e",
+  },
+  itemNotes: {
+    fontSize: 14,
+    color: "#7f8c8d",
+    marginTop: 6,
+  },
+  emptyText: {
+    textAlign: "center",
+    marginTop: 50,
+    fontSize: 16,
+    color: "#7f8c8d",
+  },
   buttonsContainer: {
     flexDirection: "row",
-    marginTop: 15,
-    justifyContent: "flex-end",
+    marginLeft: 10,
   },
   actionButton: {
-    marginLeft: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    marginLeft: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 5,
   },
   editButton: { backgroundColor: "#3498db" },

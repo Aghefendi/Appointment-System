@@ -1,9 +1,9 @@
-import { Button, StyleSheet, Text, View } from "react-native";
-import React from "react";
+import React, { useContext, useState } from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import AddAppointmentScreen from "../screen/AddAppointmentScreen";
 import EditScreen from "../screen/EditScreen";
 import UploadDocumentScreen from "../screen/Document/UploadDocument";
+
 
 
 import AppTabs from "./AppTabs";
@@ -13,6 +13,7 @@ const Stack = createStackNavigator();
 const AppStack = () => {
   return (
     <Stack.Navigator>
+    
       <Stack.Screen
         name="Maintab"
         component={AppTabs}
@@ -53,6 +54,7 @@ const AppStack = () => {
         }}
       />
       {/* Diğer ekranlarınızı buraya ekleyebilirsiniz */}
+  
     </Stack.Navigator>
   );
 };

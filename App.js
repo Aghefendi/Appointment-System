@@ -8,23 +8,23 @@ import { Provider } from "react-redux";
 import store from "./src/store/store";
 
 export default function App() {
-  // Daha açıklayıcı isimler kullanıyoruz
+  
   const [initializing, setInitializing] = useState(true);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // onAuthStateChanged aboneliğini oluşturalım
+    
     const unsubscribe = auth().onAuthStateChanged((usr) => {
       setUser(usr);
       if (initializing) {
         setInitializing(false);
       }
     });
-    // Cleanup olarak aboneliği kapat
+   
     return unsubscribe;
-  }, [initializing]);
+  }, []);
 
-  // Yüklenme sürecinde ortak bir style kullanalım
+ 
   if (initializing) {
     return (
       <View style={styles.container}>

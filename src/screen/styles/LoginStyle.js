@@ -61,7 +61,7 @@ export const styles = StyleSheet.create({
 
   formInputArea: {
     width: "100%",
-    backgroundColor: "#ffffffcc", // biraz daha opak beyaz
+    backgroundColor: "#ffffffcc", 
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 20,

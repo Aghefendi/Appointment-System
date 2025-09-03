@@ -6,20 +6,18 @@ import {
   Button,
   StyleSheet,
   Alert,
-  TouchableOpacity, // Tarih seçici butonu için
+  TouchableOpacity, 
 } from "react-native";
 import firestore from "@react-native-firebase/firestore";
 import auth from "@react-native-firebase/auth";
-import DateTimePickerModal from "react-native-modal-datetime-picker"; // Tarih seçiciyi import et
-import moment from "moment"; // Tarihi formatlamak için
+import DateTimePickerModal from "react-native-modal-datetime-picker"; 
+import moment from "moment"; 
 
 const EditAppointmentScreen = ({ route, navigation }) => {
   const { appointment } = route.params;
 
-  // State'leri, gelen 'appointment' verileriyle başlatıyoruz.
   const [title, setTitle] = useState(appointment.title);
   const [notes, setNotes] = useState(appointment.notes);
-  // Tarihi, Firestore'dan gelen Timestamp objesini Date objesine çevirerek başlatıyoruz.
   const [appointmentDate, setAppointmentDate] = useState(
     appointment.appointmentDate
       ? appointment.appointmentDate.toDate()
@@ -28,17 +26,17 @@ const EditAppointmentScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(false);
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
 
-  // Tarih seçiciyi göster/gizle fonksiyonları
+ 
   const showDatePicker = () => setDatePickerVisibility(true);
   const hideDatePicker = () => setDatePickerVisibility(false);
 
-  // Tarih seçildiğinde çalışacak fonksiyon
+ 
   const handleConfirm = (date) => {
     setAppointmentDate(date);
     hideDatePicker();
   };
 
-  // Güncelleme fonksiyonunu, tarihi de içerecek şekilde güncelliyoruz.
+  
   const handleUpdateAppointment = () => {
     if (!title || !appointmentDate) {
       Alert.alert("Hata", "Lütfen randevu başlığı ve tarihi giriniz.");
@@ -56,7 +54,7 @@ const EditAppointmentScreen = ({ route, navigation }) => {
       .update({
         title: title,
         notes: notes,
-        appointmentDate: firestore.Timestamp.fromDate(appointmentDate), // Tarihi de güncelle
+        appointmentDate: firestore.Timestamp.fromDate(appointmentDate), 
       })
       .then(() => {
         console.log("Randevu başarıyla güncellendi!");
@@ -89,7 +87,7 @@ const EditAppointmentScreen = ({ route, navigation }) => {
         multiline
       />
 
-      {/* Tarih seçici butonu */}
+      {}
       <Text style={styles.label}>Randevu Tarihi</Text>
       <TouchableOpacity
         onPress={showDatePicker}
@@ -102,13 +100,13 @@ const EditAppointmentScreen = ({ route, navigation }) => {
         </Text>
       </TouchableOpacity>
 
-      {/* Tarih seçici modal'ı */}
+      {}
       <DateTimePickerModal
         isVisible={isDatePickerVisible}
         mode="datetime"
         onConfirm={handleConfirm}
         onCancel={hideDatePicker}
-        date={appointmentDate} // Seçiciyi mevcut tarihle başlat
+        date={appointmentDate} 
       />
 
       <Button

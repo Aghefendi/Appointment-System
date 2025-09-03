@@ -24,7 +24,7 @@ const ProfileScreen = () => {
   const theme = useSelector((state) => state.theme.theme);
   const styles = createStyles(theme);
 
-  // Logout butonu için scale animasyonu
+  
   const scale = useSharedValue(1);
   const animatedBtnStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -78,10 +78,7 @@ const ProfileScreen = () => {
   }
 
   return (
-    <Animated.View
-      entering={FadeInUp.duration(500)}
-      style={styles.container}
-    >
+    <Animated.View entering={FadeInUp.duration(500)} style={styles.container}>
       <Animated.Text
         entering={FadeInDown.delay(100).duration(400)}
         style={styles.title}
@@ -103,14 +100,10 @@ const ProfileScreen = () => {
           </Text>
         </Animated.View>
       ) : (
-        <Text style={styles.errorText}>
-          Kullanıcı bilgileri yüklenemedi.
-        </Text>
+        <Text style={styles.errorText}>Kullanıcı bilgileri yüklenemedi.</Text>
       )}
 
-      <Animated.View
-        style={[styles.logoutWrapper, animatedBtnStyle]}
-      >
+      <Animated.View style={[styles.logoutWrapper, animatedBtnStyle]}>
         <Button
           title="Çıkış Yap"
           onPress={handleLogout}

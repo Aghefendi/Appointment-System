@@ -15,11 +15,10 @@ import { toggleTheme } from "../store/themeSlice";
 const HomeScreen = () => {
   const { theme, colorScheme } = useSelector((state) => state.theme);
   const dispatch = useDispatch();
-  const spinAnim = useRef(new Animated.Value(0)).current; // 0 ➔ 1 dönüş
-  const fadeAnim = useRef(new Animated.Value(0)).current; // 0 ➔ 1 opaklık
+  const spinAnim = useRef(new Animated.Value(0)).current; 
+  const fadeAnim = useRef(new Animated.Value(0)).current; 
 
   useEffect(() => {
-    // Bileşen açıldığında fade-in
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 600,
@@ -29,7 +28,7 @@ const HomeScreen = () => {
   }, [fadeAnim]);
 
   const onToggle = () => {
-    // Tema değiştir, sonra ikonu döndür
+    
     dispatch(toggleTheme());
     spinAnim.setValue(0);
     Animated.timing(spinAnim, {
@@ -40,7 +39,7 @@ const HomeScreen = () => {
     }).start();
   };
 
-  // 0–>1 değerini 0deg–>360deg’e çevir
+  
   const spin = spinAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ["0deg", "360deg"],

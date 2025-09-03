@@ -105,7 +105,6 @@ const DocumentsScreen = ({ navigation }) => {
   }
 
   return (
-    // Tüm listeyi yukarıdan fade-in ile getir
     <Animated.View entering={FadeInUp.duration(500)} style={styles.container}>
       <Button
         title="+ Yeni Evrak Yükle"

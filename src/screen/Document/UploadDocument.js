@@ -25,12 +25,12 @@ const UploadDocument = ({ navigation }) => {
   const theme = useSelector((state) => state.theme.theme);
   const styles = createStyles(theme);
 
-  // Animasyon referansları
+
   const buttonScale = useRef(new Animated.Value(1)).current;
   const fileFade = useRef(new Animated.Value(0)).current;
   const progressWidth = useRef(new Animated.Value(0)).current;
 
-  // Seçilen dosya geldiyse animasyonu başlat
+ 
   useEffect(() => {
     if (selectedFile) {
       Animated.timing(fileFade, {
@@ -42,22 +42,22 @@ const UploadDocument = ({ navigation }) => {
     }
   }, [selectedFile, fileFade]);
 
-  // Yükleme ilerledikçe progress bar genişliğini güncelle
+  
   useEffect(() => {
     if (loading) {
       Animated.timing(progressWidth, {
         toValue: progress,
         duration: 200,
         easing: Easing.linear,
-        useNativeDriver: false, // width animasyonu için false
+        useNativeDriver: false, 
       }).start();
     } else {
-      // yükleme bitince sıfırla
+     
       progressWidth.setValue(0);
     }
   }, [progress, loading, progressWidth]);
 
-  // Butona basınca pop animasyonu
+  
   const animateButton = () => {
     Animated.sequence([
       Animated.timing(buttonScale, {

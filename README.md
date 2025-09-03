@@ -14,7 +14,6 @@ Bu proje aynı zamanda bir **staj projesi** olup, modern mobil uygulama gelişti
 
 ## 🖼️ Uygulama Görselleri
 
-> Buraya uygulamanın ekran görüntülerini ekle. Örneğin:
 
 ![Login Screen](./assets/login.png)  
 ![Register Screen](./assets/register.png)  

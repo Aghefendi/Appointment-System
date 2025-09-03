@@ -86,9 +86,3 @@ Firebase entegrasyonu sayesinde ayrıca sunucu tarafı kod yazmaya gerek kalmam�
 
 ---
 
-## ⚡ Kurulum ve Çalıştırma
-
-```bash
-# Projeyi klonla
-git clone https://github.com/kullanici/rande
-```

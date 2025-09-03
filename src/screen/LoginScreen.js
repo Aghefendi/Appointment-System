@@ -11,7 +11,7 @@ import React, { useState } from "react";
 import auth from "@react-native-firebase/auth";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import imgTop from "../../assets/background.png";
-import imgLight from "../../assets/light.png"; 
+import imgLight from "../../assets/light.png";
 import { styles } from "./styles/LoginStyle";
 
 const LoginScreen = ({ navigation }) => {
@@ -38,7 +38,7 @@ const LoginScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* Arka Plan ve Işık Efektleri */}
+      {}
       <Image source={imgTop} style={styles.imageBG} />
       <View style={styles.contentTop}>
         <Animated.Image
@@ -53,7 +53,7 @@ const LoginScreen = ({ navigation }) => {
         />
       </View>
 
-      {/* Giriş Alanı */}
+      {}
       <View style={styles.main}>
         <View style={styles.login}>
           <Animated.Text

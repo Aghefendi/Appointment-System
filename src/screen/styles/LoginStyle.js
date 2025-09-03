@@ -47,7 +47,7 @@ export const styles = StyleSheet.create({
     letterSpacing: 1,
     fontSize: 48,
     textShadowColor: "#00000066",
-    textShadowOffset: { width: 1, height: 2 },
+    textShadowOffset: { width: 10, height: 10 },
     textShadowRadius: 5,
   },
 
@@ -61,17 +61,19 @@ export const styles = StyleSheet.create({
 
   formInputArea: {
     width: "100%",
-    backgroundColor: "#ffffffcc", 
+    backgroundColor: "#0330910a",
     paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 20,
     marginBottom: 16,
-    elevation: 2,
+    //elevation: 3,
+    borderColor: "#7FBEEB",
+    borderWidth: 1,
   },
 
   input: {
     fontSize: 16,
-    color: "#333",
+    color: "black",
   },
 
   formButtonArea: {

@@ -6,12 +6,12 @@ import {
   Button,
   StyleSheet,
   Alert,
-  TouchableOpacity, 
+  TouchableOpacity,
 } from "react-native";
 import firestore from "@react-native-firebase/firestore";
 import auth from "@react-native-firebase/auth";
-import DateTimePickerModal from "react-native-modal-datetime-picker"; 
-import moment from "moment"; 
+import DateTimePickerModal from "react-native-modal-datetime-picker";
+import moment from "moment";
 
 const EditAppointmentScreen = ({ route, navigation }) => {
   const { appointment } = route.params;
@@ -26,17 +26,14 @@ const EditAppointmentScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(false);
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
 
- 
   const showDatePicker = () => setDatePickerVisibility(true);
   const hideDatePicker = () => setDatePickerVisibility(false);
 
- 
   const handleConfirm = (date) => {
     setAppointmentDate(date);
     hideDatePicker();
   };
 
-  
   const handleUpdateAppointment = () => {
     if (!title || !appointmentDate) {
       Alert.alert("Hata", "Lütfen randevu başlığı ve tarihi giriniz.");
@@ -54,7 +51,7 @@ const EditAppointmentScreen = ({ route, navigation }) => {
       .update({
         title: title,
         notes: notes,
-        appointmentDate: firestore.Timestamp.fromDate(appointmentDate), 
+        appointmentDate: firestore.Timestamp.fromDate(appointmentDate),
       })
       .then(() => {
         console.log("Randevu başarıyla güncellendi!");
@@ -106,7 +103,7 @@ const EditAppointmentScreen = ({ route, navigation }) => {
         mode="datetime"
         onConfirm={handleConfirm}
         onCancel={hideDatePicker}
-        date={appointmentDate} 
+        date={appointmentDate}
       />
 
       <Button

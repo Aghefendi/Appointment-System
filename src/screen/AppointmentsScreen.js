@@ -1,47 +1,57 @@
 import React, { useState, useEffect } from "react";
 import {
+  SafeAreaView,
+  FlatList,
   View,
   Text,
-  Button,
-  FlatList,
   StyleSheet,
-  ActivityIndicator,
-  TouchableOpacity,
   Alert,
+  TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import firestore from "@react-native-firebase/firestore";
 import auth from "@react-native-firebase/auth";
 import moment from "moment";
 import "moment/locale/tr";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
+import { useSelector } from "react-redux";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 const AppointmentsScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState([]);
+  const theme = useSelector((state) => state.theme.theme);
 
   useEffect(() => {
     moment.locale("tr");
     const user = auth().currentUser;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     const subscriber = firestore()
       .collection("users")
       .doc(user.uid)
       .collection("appointments")
       .orderBy("appointmentDate", "asc")
-      .onSnapshot((qs) => {
+      .onSnapshot((querySnapshot) => {
         const data = [];
-        qs.forEach((doc) => data.push({ id: doc.id, ...doc.data() }));
+        querySnapshot.forEach((doc) => {
+          data.push({ id: doc.id, ...doc.data() });
+        });
         setAppointments(data);
-        setLoading(false);
+        if (loading) setLoading(false);
       });
+
     return () => subscriber();
   }, []);
 
-  const handleDelete = (appointmentId) => {
+  const handleDelete = (id) => {
     Alert.alert(
       "Randevuyu Sil",
-      "Bu randevuyu silmek istediğinizden emin misiniz?",
+      "Bu randevuyu kalıcı olarak silmek istediğinizden emin misiniz?",
       [
-        { text: "İptal", style: "cancel" },
+        { text: "Vazgeç", style: "cancel" },
         {
           text: "Sil",
           style: "destructive",
@@ -50,128 +60,240 @@ const AppointmentsScreen = ({ navigation }) => {
               .collection("users")
               .doc(auth().currentUser.uid)
               .collection("appointments")
-              .doc(appointmentId)
-              .delete(),
+              .doc(id)
+              .delete()
+              .catch((error) =>
+                Alert.alert("Hata", "Randevu silinirken bir sorun oluştu.")
+              ),
         },
       ]
     );
   };
 
-  const renderAppointment = ({ item, index }) => {
-    const date = item.appointmentDate?.toDate();
+  const renderItem = ({ item, index }) => {
+    const appointmentDate = item.appointmentDate?.toDate();
+    const formattedDate = moment(appointmentDate).calendar();
+    const day = moment(appointmentDate).format("DD");
+    const month = moment(appointmentDate).format("MMM");
+
     return (
-      <Animated.View
-        entering={FadeInDown.duration(400).delay(index * 100)}
-        style={styles.itemContainer}
-      >
-        <View style={{ flex: 1 }}>
-          {date && (
-            <Text style={styles.itemDate}>
-              {moment(date).format("DD MMMM YYYY, HH:mm")}
-            </Text>
-          )}
-          <Text style={styles.itemTitle}>{item.title}</Text>
-          {item.notes ? (
-            <Text style={styles.itemNotes}>{item.notes}</Text>
-          ) : null}
-        </View>
-        <View style={styles.buttonsContainer}>
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate("EditAppointment", { appointment: item })
-            }
-            style={[styles.actionButton, styles.editButton]}
+      <Animated.View entering={FadeInDown.duration(500).delay(index * 100)}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() =>
+            navigation.navigate("EditAppointment", { appointment: item })
+          }
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.cardBackground,
+              shadowColor: theme.shadowColor,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.dateSection,
+              { backgroundColor: `${theme.primary}1A` },
+            ]}
           >
-            <Text style={styles.actionButtonText}>Düzenle</Text>
-          </TouchableOpacity>
+            <Text style={[styles.dateDay, { color: theme.primary }]}>
+              {day}
+            </Text>
+            <Text style={[styles.dateMonth, { color: theme.primary }]}>
+              {month}
+            </Text>
+          </View>
+
+          {/* Orta Kısımdaki İçerik */}
+          <View style={styles.contentSection}>
+            <Text style={[styles.itemTitle, { color: theme.color }]}>
+              {item.title}
+            </Text>
+            <Text style={[styles.itemTime, { color: theme.subtleText }]}>
+              {formattedDate}
+            </Text>
+            {item.notes && (
+              <Text
+                numberOfLines={1}
+                style={[styles.itemNotes, { color: theme.subtleText }]}
+              >
+                {item.notes}
+              </Text>
+            )}
+          </View>
+
+          {/* Sağ Taraftaki Silme Butonu */}
           <TouchableOpacity
             onPress={() => handleDelete(item.id)}
-            style={[styles.actionButton, styles.deleteButton]}
+            style={styles.deleteButton}
           >
-            <Text style={styles.actionButtonText}>Sil</Text>
+            <Icon
+              name="trash-can-outline"
+              size={24}
+              color={theme.danger || "#e74c3c"}
+            />
           </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
       </Animated.View>
     );
   };
 
-  if (loading) {
-    return <ActivityIndicator size="large" style={styles.loader} />;
-  }
+  const EmptyListComponent = () => (
+    <Animated.View
+      style={styles.emptyContainer}
+      entering={FadeInUp.duration(500)}
+    >
+      <Icon
+        name="calendar-month-outline"
+        size={80}
+        color={`${theme.subtleText}80`}
+      />
+      <Text style={[styles.emptyText, { color: theme.subtleText }]}>
+        Henüz hiç randevunuz yok.
+      </Text>
+      <Text style={[styles.emptySubText, { color: theme.subtleText }]}>
+        Yeni bir tane eklemek için + düğmesine dokunun.
+      </Text>
+    </Animated.View>
+  );
 
   return (
-    <Animated.View entering={FadeInUp.duration(500)} style={styles.container}>
-      <Button
-        title="+ Yeni Randevu Ekle"
-        onPress={() => navigation.navigate("AddAppointment")}
-      />
-      {appointments.length === 0 ? (
-        <Text style={styles.emptyText}>Henüz randevunuz bulunmuyor.</Text>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: theme.backgroundColor }]}
+    >
+      <View style={styles.header}>
+        <Text style={[styles.headerTitle, { color: theme.color }]}>
+          Randevularım
+        </Text>
+      </View>
+
+      {loading ? (
+        <ActivityIndicator
+          size="large"
+          color={theme.primary}
+          style={{ flex: 1 }}
+        />
       ) : (
         <FlatList
           data={appointments}
-          renderItem={renderAppointment}
+          renderItem={renderItem}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingTop: 20, paddingBottom: 30 }}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={EmptyListComponent}
         />
       )}
-    </Animated.View>
+
+      {/* Yüzen Eylem Düğmesi (FAB) */}
+      <Animated.View entering={FadeInUp.duration(500).delay(300)}>
+        <TouchableOpacity
+          style={[
+            styles.fab,
+            { backgroundColor: theme.primary, shadowColor: theme.primary },
+          ]}
+          onPress={() => navigation.navigate("AddAppointment")}
+        >
+          <Icon name="plus" size={32} color={theme.buttonText || "#fff"} />
+        </TouchableOpacity>
+      </Animated.View>
+    </SafeAreaView>
   );
 };
 
-export default AppointmentsScreen;
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f5f5f5",
-    marginTop: 30,
-    paddingHorizontal: 10,
+  safeArea: { flex: 1 },
+  header: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
   },
-  loader: { flex: 1, justifyContent: "center" },
-  itemContainer: {
-    backgroundColor: "white",
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 12,
-    elevation: 3,
+  headerTitle: {
+    fontSize: 32,
+    fontWeight: "bold",
+  },
+  listContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 100,
+  },
+  card: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    borderRadius: 16,
+    marginBottom: 16,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 5,
   },
-  itemDate: {
-    fontSize: 14,
+  dateSection: {
+    padding: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    width: 80,
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+  },
+  dateDay: {
+    fontSize: 28,
     fontWeight: "bold",
-    color: "#2980b9",
-    marginBottom: 4,
+  },
+  dateMonth: {
+    fontSize: 14,
+    textTransform: "capitalize",
+    marginTop: 2,
+  },
+  contentSection: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   itemTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#34495e",
+  },
+  itemTime: {
+    fontSize: 14,
+    marginTop: 4,
   },
   itemNotes: {
     fontSize: 14,
-    color: "#7f8c8d",
-    marginTop: 6,
+    marginTop: 8,
+    fontStyle: "italic",
+  },
+  deleteButton: {
+    padding: 16,
+  },
+  fab: {
+    position: "absolute",
+    bottom: 30,
+    right: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+    marginTop: "30%",
   },
   emptyText: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginTop: 20,
+  },
+  emptySubText: {
+    fontSize: 14,
+    marginTop: 8,
     textAlign: "center",
-    marginTop: 50,
-    fontSize: 16,
-    color: "#7f8c8d",
   },
-  buttonsContainer: {
-    flexDirection: "row",
-    marginLeft: 10,
-  },
-  actionButton: {
-    marginLeft: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 5,
-  },
-  editButton: { backgroundColor: "#3498db" },
-  deleteButton: { backgroundColor: "#e74c3c" },
-  actionButtonText: { color: "white", fontWeight: "bold" },
 });
+
+export default AppointmentsScreen;

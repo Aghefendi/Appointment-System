@@ -1,142 +1,345 @@
 import React, { useState } from "react";
 import {
+  SafeAreaView,
   View,
   Text,
   TextInput,
-  Button,
   StyleSheet,
   Alert,
   TouchableOpacity,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
 } from "react-native";
 import firestore from "@react-native-firebase/firestore";
 import auth from "@react-native-firebase/auth";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import moment from "moment";
+import "moment/locale/tr";
+import Animated, { FadeInUp, FadeInDown } from "react-native-reanimated";
+import { useSelector } from "react-redux";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 const EditAppointmentScreen = ({ route, navigation }) => {
   const { appointment } = route.params;
+  const theme = useSelector((state) => state.theme.theme);
 
   const [title, setTitle] = useState(appointment.title);
   const [notes, setNotes] = useState(appointment.notes);
   const [appointmentDate, setAppointmentDate] = useState(
-    appointment.appointmentDate
+    appointment.appointmentDate?.toDate
       ? appointment.appointmentDate.toDate()
       : new Date()
   );
   const [loading, setLoading] = useState(false);
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
 
+  moment.locale("tr");
+
   const showDatePicker = () => setDatePickerVisibility(true);
   const hideDatePicker = () => setDatePickerVisibility(false);
-
   const handleConfirm = (date) => {
     setAppointmentDate(date);
     hideDatePicker();
   };
 
-  const handleUpdateAppointment = () => {
-    if (!title || !appointmentDate) {
-      Alert.alert("Hata", "Lütfen randevu başlığı ve tarihi giriniz.");
+  const handleUpdateAppointment = async () => {
+    if (!title.trim() || !appointmentDate) {
+      Alert.alert(
+        "Eksik Bilgi",
+        "Lütfen randevu başlığı ve tarihi alanlarını doldurun."
+      );
       return;
     }
 
     setLoading(true);
-    const userId = auth().currentUser.uid;
+    const userId = auth().currentUser?.uid;
+    if (!userId) {
+      Alert.alert("Hata", "Geçerli bir kullanıcı oturumu bulunamadı.");
+      setLoading(false);
+      return;
+    }
 
-    firestore()
-      .collection("users")
-      .doc(userId)
-      .collection("appointments")
-      .doc(appointment.id)
-      .update({
-        title: title,
-        notes: notes,
-        appointmentDate: firestore.Timestamp.fromDate(appointmentDate),
-      })
-      .then(() => {
-        console.log("Randevu başarıyla güncellendi!");
-        setLoading(false);
-        navigation.goBack();
-      })
-      .catch((error) => {
-        console.error(error);
-        setLoading(false);
-        Alert.alert("Hata", "Randevu güncellenirken bir sorun oluştu.");
-      });
+    try {
+      await firestore()
+        .collection("users")
+        .doc(userId)
+        .collection("appointments")
+        .doc(appointment.id)
+        .update({
+          title: title.trim(),
+          notes: notes.trim(),
+          appointmentDate: firestore.Timestamp.fromDate(appointmentDate),
+        });
+      Alert.alert("Başarılı", "Randevu başarıyla güncellendi.");
+      navigation.goBack();
+    } catch (error) {
+      console.error("Güncelleme hatası:", error);
+      Alert.alert("Hata", "Randevu güncellenirken bir sorun oluştu.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>Randevu Başlığı</Text>
-      <TextInput
-        style={styles.input}
-        value={title}
-        onChangeText={setTitle}
-        placeholder="Örn: Diş Hekimi Kontrolü"
-      />
-
-      <Text style={styles.label}>Notlar</Text>
-      <TextInput
-        style={[styles.input, { height: 100 }]}
-        value={notes}
-        onChangeText={setNotes}
-        placeholder="Randevu ile ilgili detaylar"
-        multiline
-      />
-
-      {}
-      <Text style={styles.label}>Randevu Tarihi</Text>
-      <TouchableOpacity
-        onPress={showDatePicker}
-        style={styles.datePickerButton}
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: theme.backgroundColor }]}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
       >
-        <Text style={styles.datePickerText}>
-          {appointmentDate
-            ? moment(appointmentDate).format("DD MMMM YYYY, HH:mm")
-            : "Tarih seç"}
-        </Text>
-      </TouchableOpacity>
+        <Animated.View
+          entering={FadeInDown.duration(400)}
+          style={styles.header}
+        >
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <Icon name="arrow-left" size={24} color={theme.primary} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: theme.color }]}>
+            Randevuyu Düzenle
+          </Text>
+          <View style={{ width: 40 }} />
+        </Animated.View>
 
-      {}
-      <DateTimePickerModal
-        isVisible={isDatePickerVisible}
-        mode="datetime"
-        onConfirm={handleConfirm}
-        onCancel={hideDatePicker}
-        date={appointmentDate}
-      />
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <Animated.View entering={FadeInUp.duration(500).delay(100)}>
+            <Text style={[styles.label, { color: theme.subtleText }]}>
+              Başlık
+            </Text>
+            <View
+              style={[
+                styles.inputContainer,
+                {
+                  backgroundColor: theme.cardBackground,
+                  shadowColor: theme.shadowColor,
+                },
+              ]}
+            >
+              <Icon
+                name="format-title"
+                size={22}
+                color={theme.subtleText}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={[styles.input, { color: theme.color }]}
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Örn: Proje Sunumu"
+                placeholderTextColor={theme.subtleText}
+              />
+            </View>
+          </Animated.View>
 
-      <Button
-        title={loading ? "Güncelleniyor..." : "Randevuyu Güncelle"}
-        onPress={handleUpdateAppointment}
-        disabled={loading}
-      />
-    </View>
+          <Animated.View entering={FadeInUp.duration(500).delay(200)}>
+            <Text style={[styles.label, { color: theme.subtleText }]}>
+              Notlar (İsteğe Bağlı)
+            </Text>
+            <View
+              style={[
+                styles.inputContainer,
+                {
+                  backgroundColor: theme.cardBackground,
+                  shadowColor: theme.shadowColor,
+                  height: 120,
+                  alignItems: "flex-start",
+                },
+              ]}
+            >
+              <Icon
+                name="note-text-outline"
+                size={22}
+                color={theme.subtleText}
+                style={[styles.inputIcon, { marginTop: 14 }]}
+              />
+              <TextInput
+                style={[
+                  styles.input,
+                  { color: theme.color, height: 100, textAlignVertical: "top" },
+                ]}
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="Randevu ile ilgili detaylar..."
+                placeholderTextColor={theme.subtleText}
+                multiline
+              />
+            </View>
+          </Animated.View>
+
+          <Animated.View entering={FadeInUp.duration(500).delay(300)}>
+            <Text style={[styles.label, { color: theme.subtleText }]}>
+              Tarih ve Saat
+            </Text>
+            <TouchableOpacity activeOpacity={0.7} onPress={showDatePicker}>
+              <View
+                style={[
+                  styles.inputContainer,
+                  {
+                    backgroundColor: theme.cardBackground,
+                    shadowColor: theme.shadowColor,
+                  },
+                ]}
+              >
+                <Icon
+                  name="calendar-clock"
+                  size={22}
+                  color={theme.subtleText}
+                  style={styles.inputIcon}
+                />
+                <View style={styles.dateTextView}>
+                  {appointmentDate ? (
+                    <>
+                      <Text style={[styles.dateText, { color: theme.primary }]}>
+                        {moment(appointmentDate).format("DD MMMM YYYY, dddd")}
+                      </Text>
+                      <Text style={[styles.timeText, { color: theme.color }]}>
+                        {moment(appointmentDate).format("HH:mm")}
+                      </Text>
+                    </>
+                  ) : (
+                    <Text
+                      style={[
+                        styles.datePlaceholder,
+                        { color: theme.subtleText },
+                      ]}
+                    >
+                      Tarih ve saat seçin
+                    </Text>
+                  )}
+                </View>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+        </ScrollView>
+
+        <Animated.View
+          style={styles.buttonContainer}
+          entering={FadeInDown.duration(500).delay(400)}
+        >
+          <TouchableOpacity
+            onPress={handleUpdateAppointment}
+            disabled={loading}
+            activeOpacity={0.8}
+            style={[styles.saveButton, { backgroundColor: theme.primary }]}
+          >
+            {loading ? (
+              <ActivityIndicator color={theme.buttonText} />
+            ) : (
+              <>
+                <Icon
+                  name="content-save-edit-outline"
+                  size={22}
+                  color={theme.buttonText}
+                />
+                <Text
+                  style={[styles.saveButtonText, { color: theme.buttonText }]}
+                >
+                  Değişiklikleri Kaydet
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </Animated.View>
+
+        <DateTimePickerModal
+          isVisible={isDatePickerVisible}
+          mode="datetime"
+          onConfirm={handleConfirm}
+          onCancel={hideDatePicker}
+          date={appointmentDate || new Date()} 
+          confirmTextIOS="Onayla"
+          cancelTextIOS="Vazgeç"
+        />
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 export default EditAppointmentScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
-  label: { fontSize: 16, marginBottom: 5, fontWeight: "500" },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 10,
-    marginBottom: 20,
-    borderRadius: 5,
-    fontSize: 16,
-  },
-  datePickerButton: {
-    padding: 12,
-    backgroundColor: "#f0f0f0",
-    borderRadius: 6,
-    marginBottom: 20,
+  safeArea: { flex: 1 },
+  header: {
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 10,
+    paddingVertical: 15,
   },
-  datePickerText: {
+  backButton: {
+    padding: 10,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 120,
+  },
+  label: {
     fontSize: 16,
-    color: "#333",
+    fontWeight: "500",
+    marginBottom: 8,
+    marginLeft: 5,
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 16,
+    marginBottom: 25,
+    paddingHorizontal: 15,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  inputIcon: {
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 16,
+  },
+  dateTextView: {
+    flex: 1,
+    paddingVertical: 16,
+  },
+  datePlaceholder: {
+    fontSize: 16,
+  },
+  dateText: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  timeText: {
+    fontSize: 15,
+    marginTop: 2,
+  },
+  buttonContainer: {
+    padding: 20,
+    paddingBottom: Platform.OS === "ios" ? 30 : 20,
+  },
+  saveButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 18,
+    borderRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  saveButtonText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginLeft: 10,
   },
 });

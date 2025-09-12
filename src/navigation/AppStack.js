@@ -4,8 +4,6 @@ import AddAppointmentScreen from "../screen/AddAppointmentScreen";
 import EditScreen from "../screen/EditScreen";
 import UploadDocumentScreen from "../screen/Document/UploadDocument";
 
-
-
 import AppTabs from "./AppTabs";
 
 const Stack = createStackNavigator();
@@ -13,7 +11,6 @@ const Stack = createStackNavigator();
 const AppStack = () => {
   return (
     <Stack.Navigator>
-    
       <Stack.Screen
         name="Maintab"
         component={AppTabs}
@@ -23,7 +20,7 @@ const AppStack = () => {
         name="AddAppointment"
         component={AddAppointmentScreen}
         options={{
-          title: "Yeni Randevu Ekle", // Ekranın başlığı
+          headerShown: false, // Ekranın başlığı
           presentation: "modal", // Ekranın alttan açılması için (şık bir görünüm)
           headerStyle: {
             alignItems: "center", // Başlık metnini ortalamak için
@@ -41,6 +38,7 @@ const AppStack = () => {
         name="EditAppointment"
         component={EditScreen}
         options={{
+          headerShown: false,
           title: "Randevuyu Düzenle",
           presentation: "modal",
         }}
@@ -51,10 +49,12 @@ const AppStack = () => {
         options={{
           title: "Yeni Evrak Yükle",
           presentation: "modal",
+          headerStyle: {
+            alignItems: "center",
+          },
         }}
       />
       {/* Diğer ekranlarınızı buraya ekleyebilirsiniz */}
-  
     </Stack.Navigator>
   );
 };

@@ -1,18 +1,21 @@
-# Node.js
+# Node.js & Package Managers
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+.npm
+.yarn-integrity
+.pnp.cjs
+.pnp.loader.mjs
+
+
 
 # Logs
 logs/
 *.log
-npm-debug.log*
-yarn-debug.log*
-pnpm-debug.log*
 
-# Runtime data
+# Runtime / PIDs
 pids/
 *.pid
 *.seed
@@ -33,6 +36,19 @@ ios/
 *.p12
 *.mobileprovision
 
+# Android build / caches
+android/.gradle/
+android/app/build/
+.gradle/
+local.properties
+
+# iOS / Xcode
+ios/Pods/
+ios/build/
+xcuserdata/
+*.xcuserstate
+# *.xcworkspace genelde commit edilir (workspace ayarlarına göre)
+
 # Build artifacts
 dist/
 build/
@@ -43,29 +59,37 @@ coverage/
 # Firebase
 firebase-debug.log
 .firebase/
+# Firebase Emulator verileri
+.firebase/emulators/
+# Functions build outputs
+functions/node_modules/
+functions/lib/
+functions/dist/
+.runtimeconfig.json
+# Servis hesabı anahtarları (mutlak ignore edilsin)
+*service-account*.json
+*serviceAccountKey*.json
 
 # Metro
 .metro-cache/
 /.metro-health-check*
 
-# macOS
+# OS specific
 .DS_Store
-
-# Windows
 Thumbs.db
 ehthumbs.db
 Desktop.ini
 
-# Sertifikalar ve anahtarlar
+# Certificates and keys
 *.pem
 *.key
 
-# Environment files
+# Environment files (ignore, but allow example)
 .env
 .env.*
 !.env.example
 
-# IDE & Editor folders
+# IDE & Editor
 .vscode/
 .idea/
 *.sublime-workspace
@@ -80,12 +104,9 @@ nyc_output/
 # Buck build (React Native)
 buck-out/
 \.buckd/
-*.keystore
 
-# Android Studio
+# Android Studio / IntelliJ
 *.iml
-.gradle/
-local.properties
 
 # Crashlytics
 crashlytics-build.properties
@@ -96,12 +117,7 @@ fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
 
-# Yarn Integrity file
-.yarn-integrity
-.pnp.cjs
-.pnp.loader.mjs
-
-# Optional npm cache directory
-.npm
-
-# End of recommended ignores
+# Google Services config (öneri: private repo değilseniz bunları ignore edin)
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+ios/GoogleService-Info.plist

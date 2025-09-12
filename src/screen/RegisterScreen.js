@@ -13,7 +13,6 @@ import firestore, { firebase } from "@react-native-firebase/firestore";
 import { styles } from "./styles/SingUpStyle";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
-
 import imgTop from "../../assets/background.png";
 import imgLight from "../../assets/light.png";
 

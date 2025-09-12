@@ -25,12 +25,10 @@ const UploadDocument = ({ navigation }) => {
   const theme = useSelector((state) => state.theme.theme);
   const styles = createStyles(theme);
 
-
   const buttonScale = useRef(new Animated.Value(1)).current;
   const fileFade = useRef(new Animated.Value(0)).current;
   const progressWidth = useRef(new Animated.Value(0)).current;
 
- 
   useEffect(() => {
     if (selectedFile) {
       Animated.timing(fileFade, {
@@ -42,22 +40,19 @@ const UploadDocument = ({ navigation }) => {
     }
   }, [selectedFile, fileFade]);
 
-  
   useEffect(() => {
     if (loading) {
       Animated.timing(progressWidth, {
         toValue: progress,
         duration: 200,
         easing: Easing.linear,
-        useNativeDriver: false, 
+        useNativeDriver: false,
       }).start();
     } else {
-     
       progressWidth.setValue(0);
     }
   }, [progress, loading, progressWidth]);
 
-  
   const animateButton = () => {
     Animated.sequence([
       Animated.timing(buttonScale, {

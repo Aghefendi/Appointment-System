@@ -14,13 +14,12 @@ Bu proje aynı zamanda bir **staj projesi** olup, modern mobil uygulama gelişti
 
 ## 🖼️ Uygulama Görselleri
 
-> Buraya uygulamanın ekran görüntülerini ekle. Örneğin:
-
 ![Login Screen](./assets/login.png)  
 ![Register Screen](./assets/register.png)  
-![Appointments Screen](./assets/randevu.png)  
+![Appointments Screen](./assets/appo.jpeg)  
 ![Documents Screen](./assets/documents.png)  
-![Profile Screen](./assets/profile.png)
+![Profile Screen](./assets/profile.jpeg)
+![Add Appoinment](./assets/new_app.jpeg)
 
 ---
 
@@ -36,6 +35,7 @@ Bu proje aynı zamanda bir **staj projesi** olup, modern mobil uygulama gelişti
 
 - Randevuları **listeleme, ekleme, düzenleme, silme**
 - Başlık, notlar ve tarih gibi detaylı bilgiler
+- Firebase bildirim → Cloud Functions
 
 ### 📂 Evrak Yönetimi
 
@@ -63,6 +63,7 @@ Bu proje aynı zamanda bir **staj projesi** olup, modern mobil uygulama gelişti
   - Authentication
   - Firestore
   - Storage
+  - Cloud Functions
 - **Navigasyon:** React Navigation (Stack & Bottom Tabs)
 - **State Management:** Redux & Redux Toolkit
 - **Animasyon:** React Native Reanimated
@@ -85,4 +86,3 @@ Bu yapı, **modüler**, **anlaşılır** ve **sürdürülebilir** bir kod mimari
 Firebase entegrasyonu sayesinde ayrıca sunucu tarafı kod yazmaya gerek kalmamış, hızlı geliştirme mümkün olmuştur.
 
 ---
-

@@ -1,11 +1,16 @@
 import React, { useState } from "react";
 import {
+  SafeAreaView,
   View,
   Text,
   TextInput,
   StyleSheet,
   Alert,
-  TouchableWithoutFeedback,
+  TouchableOpacity,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
 } from "react-native";
 import firestore from "@react-native-firebase/firestore";
 import auth from "@react-native-firebase/auth";
@@ -19,6 +24,8 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from "react-native-reanimated";
+import { useSelector } from "react-redux";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 
 const AddAppointmentScreen = ({ navigation }) => {
   const [title, setTitle] = useState("");
@@ -26,20 +33,20 @@ const AddAppointmentScreen = ({ navigation }) => {
   const [appointmentDate, setAppointmentDate] = useState(null);
   const [loading, setLoading] = useState(false);
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+  const theme = useSelector((state) => state.theme.theme);
 
   moment.locale("tr");
 
-  // Buton için scale animasyonu
   const btnScale = useSharedValue(1);
   const btnStyle = useAnimatedStyle(() => ({
     transform: [{ scale: btnScale.value }],
   }));
 
   const onPressIn = () => {
-    btnScale.value = withSpring(0.9, { stiffness: 200, damping: 10 });
+    btnScale.value = withSpring(0.95, { stiffness: 200, damping: 15 });
   };
   const onPressOut = () => {
-    btnScale.value = withSpring(1, { stiffness: 200, damping: 10 });
+    btnScale.value = withSpring(1, { stiffness: 200, damping: 15 });
   };
 
   const showDatePicker = () => setDatePickerVisibility(true);
@@ -50,149 +57,307 @@ const AddAppointmentScreen = ({ navigation }) => {
   };
 
   const handleSaveAppointment = async () => {
-    if (!title || !appointmentDate) {
-      Alert.alert("Hata", "Lütfen başlık ve tarih giriniz.");
+    if (!title.trim() || !appointmentDate) {
+      Alert.alert(
+        "Eksik Bilgi",
+        "Lütfen randevu başlığı ve tarihi alanlarını doldurun."
+      );
       return;
     }
     const user = auth().currentUser;
     if (!user) {
-      Alert.alert("Hata", "Oturum bulunamadı.");
+      Alert.alert("Hata", "Geçerli bir kullanıcı oturumu bulunamadı.");
       return;
     }
     setLoading(true);
     try {
+      // messaging().getToken() kısmı orjinal kodda vardı, platform uyumluluğu için eklenmiş olabilir.
+      // const fcmToken = await messaging().getToken();
       await firestore()
         .collection("users")
         .doc(user.uid)
         .collection("appointments")
         .add({
-          title,
-          notes,
+          title: title.trim(),
+          notes: notes.trim(),
           appointmentDate: firestore.Timestamp.fromDate(appointmentDate),
           createdAt: firestore.FieldValue.serverTimestamp(),
-          isCompleted: false,
         });
-      Alert.alert("Başarılı", "Randevunuz kaydedildi.");
+      Alert.alert("Başarılı", "Randevunuz başarıyla oluşturuldu.");
       navigation.goBack();
     } catch (err) {
-      console.error(err);
-      Alert.alert("Hata", "Kaydederken sorun oluştu.");
+      console.error("Randevu kaydetme hatası:", err);
+      Alert.alert("Hata", "Randevu kaydedilirken bir sorun oluştu.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Animated.View entering={FadeInUp.duration(500)} style={styles.container}>
-      <Animated.View entering={FadeInDown.delay(100).duration(300)}>
-        <Text style={styles.label}>Randevu Başlığı</Text>
-        <TextInput
-          style={styles.input}
-          value={title}
-          onChangeText={setTitle}
-          placeholder="Örn: Diş Hekimi Kontrolü"
-        />
-      </Animated.View>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: theme.backgroundColor }]}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={{ flex: 1 }}
+      >
+        <Animated.View
+          entering={FadeInDown.duration(400)}
+          style={styles.header}
+        >
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <Icon name="arrow-left" size={24} color={theme.primary} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: theme.color }]}>
+            Yeni Randevu
+          </Text>
+          <View style={{ width: 40 }} />
+        </Animated.View>
 
-      <Animated.View entering={FadeInDown.delay(200).duration(300)}>
-        <Text style={styles.label}>Notlar</Text>
-        <TextInput
-          style={[styles.input, { height: 100 }]}
-          value={notes}
-          onChangeText={setNotes}
-          placeholder="Detaylar"
-          multiline
-        />
-      </Animated.View>
-
-      <Animated.View entering={FadeInDown.delay(300).duration(300)}>
-        <Text style={styles.label}>Randevu Tarihi</Text>
-        <TouchableWithoutFeedback onPress={showDatePicker}>
-          <View style={styles.datePickerButton}>
-            <Text style={styles.datePickerText}>
-              {appointmentDate
-                ? moment(appointmentDate).format("LLL")
-                : "Tarih seçiniz"}
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <Animated.View entering={FadeInUp.duration(500).delay(100)}>
+            <Text style={[styles.label, { color: theme.subtleText }]}>
+              Başlık
             </Text>
-          </View>
-        </TouchableWithoutFeedback>
+            <View
+              style={[
+                styles.inputContainer,
+                {
+                  backgroundColor: theme.cardBackground,
+                  shadowColor: theme.shadowColor,
+                },
+              ]}
+            >
+              <Icon
+                name="format-title"
+                size={22}
+                color={theme.subtleText}
+                style={styles.inputIcon}
+              />
+              <TextInput
+                style={[styles.input, { color: theme.color }]}
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Örn: Proje Sunumu"
+                placeholderTextColor={theme.subtleText}
+              />
+            </View>
+          </Animated.View>
+
+          <Animated.View entering={FadeInUp.duration(500).delay(200)}>
+            <Text style={[styles.label, { color: theme.subtleText }]}>
+              Notlar (İsteğe Bağlı)
+            </Text>
+            <View
+              style={[
+                styles.inputContainer,
+                {
+                  backgroundColor: theme.cardBackground,
+                  shadowColor: theme.shadowColor,
+                  height: 120,
+                  alignItems: "flex-start",
+                },
+              ]}
+            >
+              <Icon
+                name="note-text-outline"
+                size={22}
+                color={theme.subtleText}
+                style={[styles.inputIcon, { marginTop: 14 }]}
+              />
+              <TextInput
+                style={[
+                  styles.input,
+                  { color: theme.color, height: 100, textAlignVertical: "top" },
+                ]}
+                value={notes}
+                onChangeText={setNotes}
+                placeholder="Randevu ile ilgili detaylar..."
+                placeholderTextColor={theme.subtleText}
+                multiline
+              />
+            </View>
+          </Animated.View>
+
+          <Animated.View entering={FadeInUp.duration(500).delay(300)}>
+            <Text style={[styles.label, { color: theme.subtleText }]}>
+              Tarih ve Saat
+            </Text>
+            <TouchableOpacity activeOpacity={0.7} onPress={showDatePicker}>
+              <View
+                style={[
+                  styles.inputContainer,
+                  {
+                    backgroundColor: theme.cardBackground,
+                    shadowColor: theme.shadowColor,
+                  },
+                ]}
+              >
+                <Icon
+                  name="calendar-clock"
+                  size={22}
+                  color={theme.subtleText}
+                  style={styles.inputIcon}
+                />
+                <View style={styles.dateTextView}>
+                  {appointmentDate ? (
+                    <>
+                      <Text style={[styles.dateText, { color: theme.primary }]}>
+                        {moment(appointmentDate).format("DD MMMM YYYY, dddd")}
+                      </Text>
+                      <Text style={[styles.timeText, { color: theme.color }]}>
+                        {moment(appointmentDate).format("HH:mm")}
+                      </Text>
+                    </>
+                  ) : (
+                    <Text
+                      style={[
+                        styles.datePlaceholder,
+                        { color: theme.subtleText },
+                      ]}
+                    >
+                      Tarih ve saat seçin
+                    </Text>
+                  )}
+                </View>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+        </ScrollView>
+
+        <Animated.View
+          style={[styles.buttonContainer, btnStyle]}
+          entering={FadeInDown.duration(500).delay(400)}
+        >
+          <TouchableOpacity
+            onPressIn={onPressIn}
+            onPressOut={onPressOut}
+            onPress={handleSaveAppointment}
+            disabled={loading}
+            activeOpacity={0.8}
+            style={[styles.saveButton, { backgroundColor: theme.primary }]}
+          >
+            {loading ? (
+              <ActivityIndicator color={theme.buttonText} />
+            ) : (
+              <>
+                <Icon
+                  name="check-circle-outline"
+                  size={22}
+                  color={theme.buttonText}
+                />
+                <Text
+                  style={[styles.saveButtonText, { color: theme.buttonText }]}
+                >
+                  Randevuyu Kaydet
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </Animated.View>
+
         <DateTimePickerModal
           isVisible={isDatePickerVisible}
           mode="datetime"
           onConfirm={handleConfirm}
           onCancel={hideDatePicker}
           minimumDate={new Date()}
+          confirmTextIOS="Onayla"
+          cancelTextIOS="Vazgeç"
         />
-      </Animated.View>
-
-      <Animated.View
-        entering={FadeInDown.delay(400).duration(300)}
-        style={[styles.buttonWrapper, btnStyle]}
-      >
-        <TouchableWithoutFeedback
-          onPressIn={onPressIn}
-          onPressOut={onPressOut}
-          onPress={handleSaveAppointment}
-          disabled={loading}
-        >
-          <View style={styles.saveButton}>
-            <Text style={styles.saveButtonText}>
-              {loading ? "Kaydediliyor..." : "Randevuyu Kaydet"}
-            </Text>
-          </View>
-        </TouchableWithoutFeedback>
-      </Animated.View>
-    </Animated.View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 export default AddAppointmentScreen;
 
+// --- STİLLER ---
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: "#fff",
+  safeArea: { flex: 1 },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 10,
+    paddingVertical: 15,
+  },
+  backButton: {
+    padding: 10,
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 120,
   },
   label: {
     fontSize: 16,
-    marginBottom: 6,
     fontWeight: "500",
-    color: "#333",
+    marginBottom: 8,
+    marginLeft: 5,
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 16,
+    marginBottom: 25,
+    paddingHorizontal: 15,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  inputIcon: {
+    marginRight: 10,
   },
   input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 12,
-    marginBottom: 20,
-    borderRadius: 6,
+    flex: 1,
     fontSize: 16,
-    backgroundColor: "#fafafa",
+    paddingVertical: 16,
   },
-  datePickerButton: {
-    padding: 14,
-    backgroundColor: "#f0f0f0",
-    borderRadius: 6,
-    marginBottom: 20,
+  dateTextView: {
+    flex: 1,
+    paddingVertical: 16,
   },
-  datePickerText: {
+  datePlaceholder: {
     fontSize: 16,
-    color: "#444",
   },
-  buttonWrapper: {
-    alignItems: "center",
-    marginTop: 10,
-  },
-  saveButton: {
-    backgroundColor: "#2980b9",
-    paddingVertical: 14,
-    paddingHorizontal: 40,
-    borderRadius: 8,
-    elevation: 3,
-  },
-  saveButtonText: {
-    color: "#fff",
+  dateText: {
     fontSize: 16,
     fontWeight: "600",
+  },
+  timeText: {
+    fontSize: 15,
+    marginTop: 2,
+  },
+  buttonContainer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 20,
+    paddingBottom: Platform.OS === "ios" ? 30 : 20,
+  },
+  saveButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 18,
+    borderRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  saveButtonText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginLeft: 10,
   },
 });

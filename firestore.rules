@@ -1,0 +1,26 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // users/{userId} -> Kullanıcının ana profil dökümanı
+    match /users/{userId} {
+      // Bir kullanıcı sadece kendi profilini okuyabilir, güncelleyebilir ve silebilir.
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      // Giriş yapmış her kullanıcı yeni bir profil oluşturabilir (kayıt olabilir).
+      allow create: if request.auth != null;
+
+      // users/{userId}/appointments/{appointmentId} -> Randevular alt koleksiyonu
+      match /appointments/{appointmentId} {
+        // Bir kullanıcı sadece kendi randevularını okuyabilir ve yönetebilir.
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // users/{userId}/documents/{documentId} -> Evraklar alt koleksiyonu
+      match /documents/{documentId} {
+        // Bir kullanıcı sadece kendi evrak meta-verilerini okuyabilir ve yönetebilir.
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+  }
+}

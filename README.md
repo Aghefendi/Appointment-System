@@ -14,12 +14,29 @@ Bu proje aynı zamanda bir **staj projesi** olup, modern mobil uygulama gelişti
 
 ## 🖼️ Uygulama Görselleri
 
-![Login Screen](./assets/login.png)  
-![Register Screen](./assets/register.png)  
-![Appointments Screen](./assets/appo.jpeg)  
-![Documents Screen](./assets/documents.png)  
-![Profile Screen](./assets/profile.png)
-![Add Appoinment](./assets/appoinmentAdd.png)
+### Login Screen
+
+<img src="./assets/login.png" width="300"/>
+
+### Register Screen
+
+<img src="./assets/register.png" width="300"/>
+
+### Appointments Screen
+
+<img src="./assets/appo.jpeg" width="300"/>
+
+### Documents Screen
+
+<img src="./assets/documents.png" width="300"/>
+
+### Profile Screen
+
+<img src="./assets/profile.png" width="300"/>
+
+### Add Appointment
+
+<img src="./assets/appoinmentAdd.png" width="300"/>
 
 ---
 

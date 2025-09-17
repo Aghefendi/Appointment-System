@@ -62,45 +62,34 @@ const ProfileScreen = () => {
 
   useEffect(() => {
     const user = auth().currentUser;
-    if (!user) {
-      dispatch(setLoading(false));
-      return;
-    }
+    if (!user) return;
 
-    const userSub = firestore()
-      .collection("users")
-      .doc(user.uid)
-      .onSnapshot((snap) => {
-        if (snap.exists) {
-          const rawData = snap.data();
-          const serializableData = processFirestoreData(rawData);
-          dispatch(setUserData(serializableData));
-        } else {
-          dispatch(setUserData(null));
-        }
-        dispatch(setLoading(false));
-      });
+    const userDocRef = firestore().collection("users").doc(user.uid);
+    const appointmentsColRef = userDocRef.collection("appointments");
+    const documentsColRef = userDocRef.collection("documents");
 
-    const appointmentSub = firestore()
-      .collection("users")
-      .doc(user.uid)
-      .collection("appointments")
-      .onSnapshot((snap) => {
-        dispatch(setAppointmentCount(snap.size));
-      });
 
-    const documentSub = firestore()
-      .collection("users")
-      .doc(user.uid)
-      .collection("documents")
-      .onSnapshot((snap) => {
-        dispatch(setDocumentCount(snap.size));
-      });
+    const unsubscribeUser = userDocRef.onSnapshot((snap) => {
+      if (snap.exists) {
+        const rawData = snap.data();
+        dispatch(setUserData(processFirestoreData(rawData)));
+      } else {
+        dispatch(setUserData(null));
+      }
+    });
+
+    const unsubscribeAppointments = appointmentsColRef.onSnapshot((snap) => {
+      dispatch(setAppointmentCount(snap.size));
+    });
+
+    const unsubscribeDocuments = documentsColRef.onSnapshot((snap) => {
+      dispatch(setDocumentCount(snap.size));
+    });
 
     return () => {
-      userSub();
-      appointmentSub();
-      documentSub();
+      unsubscribeUser();
+      unsubscribeAppointments();
+      unsubscribeDocuments();
     };
   }, [dispatch]);
 

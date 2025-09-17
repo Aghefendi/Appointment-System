@@ -1,18 +1,16 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   SafeAreaView,
   View,
   Text,
   TextInput,
   StyleSheet,
-  Alert,
   TouchableOpacity,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
 } from "react-native";
-import firestore from "@react-native-firebase/firestore";
 import auth from "@react-native-firebase/auth";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
 import moment from "moment";
@@ -26,6 +24,8 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSelector } from "react-redux";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import CustomAlert from "../component/CustomAlert";
+import { addAppointment } from "../services/appointmentService";
 
 const AddAppointmentScreen = ({ navigation }) => {
   const [title, setTitle] = useState("");
@@ -34,6 +34,12 @@ const AddAppointmentScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const theme = useSelector((state) => state.theme.theme);
+  const [alertInfo, setAlertInfo] = useState({
+    title: "",
+    message: "",
+    type: "info",
+  });
+  const [alertVisible, setAlertVisible] = useState(false);
 
   moment.locale("tr");
 
@@ -58,36 +64,50 @@ const AddAppointmentScreen = ({ navigation }) => {
 
   const handleSaveAppointment = async () => {
     if (!title.trim() || !appointmentDate) {
-      Alert.alert(
-        "Eksik Bilgi",
-        "Lütfen randevu başlığı ve tarihi alanlarını doldurun."
-      );
+      setAlertInfo({
+        title: "Hata",
+        message:
+          "Eksik Bilgi, Lütfen randevu başlığı ve tarihi alanlarını doldurun.",
+        type: "error",
+      });
+      setAlertVisible(true);
       return;
     }
     const user = auth().currentUser;
     if (!user) {
-      Alert.alert("Hata", "Geçerli bir kullanıcı oturumu bulunamadı.");
+      setAlertInfo({
+        title: "Hata",
+        message: "Geçerli bir kullanıcı oturumu bulunamadı",
+        type: "error",
+      });
+      setAlertVisible(true);
       return;
     }
+
     setLoading(true);
     try {
-      // messaging().getToken() kısmı orjinal kodda vardı, platform uyumluluğu için eklenmiş olabilir.
-      // const fcmToken = await messaging().getToken();
-      await firestore()
-        .collection("users")
-        .doc(user.uid)
-        .collection("appointments")
-        .add({
-          title: title.trim(),
-          notes: notes.trim(),
-          appointmentDate: firestore.Timestamp.fromDate(appointmentDate),
-          createdAt: firestore.FieldValue.serverTimestamp(),
-        });
-      Alert.alert("Başarılı", "Randevunuz başarıyla oluşturuldu.");
+      const appointmentData = {
+        title: title,
+        notes: notes,
+        appointmentDate: appointmentDate,
+      };
+      await addAppointment(user.uid, appointmentData);
+
+      setAlertInfo({
+        title: "Başarılı",
+        message: "Randevunuz başarıyla oluşturuldu.",
+        type: "success",
+      });
+      setAlertVisible(true);
       navigation.goBack();
     } catch (err) {
       console.error("Randevu kaydetme hatası:", err);
-      Alert.alert("Hata", "Randevu kaydedilirken bir sorun oluştu.");
+      setAlertInfo({
+        title: "Hata",
+        message: err.message || "Randevu kaydedilirken bir sorun oluştu.",
+        type: "error",
+      });
+      setAlertVisible(true);
     } finally {
       setLoading(false);
     }
@@ -268,6 +288,14 @@ const AddAppointmentScreen = ({ navigation }) => {
           confirmTextIOS="Onayla"
           cancelTextIOS="Vazgeç"
         />
+        <CustomAlert
+          visible={alertVisible}
+          onClose={() => setAlertVisible(false)}
+          title={alertInfo.title}
+          message={alertInfo.message}
+          type={alertInfo.type}
+          buttons={[{ text: "Tamam" }]}
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -275,7 +303,6 @@ const AddAppointmentScreen = ({ navigation }) => {
 
 export default AddAppointmentScreen;
 
-// --- STİLLER ---
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   header: {

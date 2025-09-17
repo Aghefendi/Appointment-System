@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   SafeAreaView,
   FlatList,
@@ -10,14 +10,13 @@ import {
   ActivityIndicator,
   Linking,
 } from "react-native";
-import firestore from "@react-native-firebase/firestore";
 import auth from "@react-native-firebase/auth";
-import storage from "@react-native-firebase/storage";
 import moment from "moment";
 import "moment/locale/tr";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { useSelector } from "react-redux";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { listenDocuments, deleteDocument } from "../services/documentService";
 
 const DocumentsScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
@@ -32,27 +31,12 @@ const DocumentsScreen = ({ navigation }) => {
       return;
     }
 
-    const subscriber = firestore()
-      .collection("users")
-      .doc(user.uid)
-      .collection("documents")
-      .orderBy("createdAt", "desc")
-      .onSnapshot(
-        (querySnapshot) => {
-          const docs = [];
-          querySnapshot.forEach((doc) =>
-            docs.push({ id: doc.id, ...doc.data() })
-          );
-          setDocuments(docs);
-          if (loading) setLoading(false);
-        },
-        (error) => {
-          console.error("Evrakları çekerken hata: ", error);
-          setLoading(false);
-        }
-      );
+    const unsubscribe = listenDocuments(user.uid, (docs) => {
+      setDocuments(docs);
+      setLoading(false);
+    });
 
-    return () => subscriber();
+    return () => unsubscribe();
   }, []);
 
   const handleDelete = (document) => {
@@ -66,15 +50,7 @@ const DocumentsScreen = ({ navigation }) => {
           style: "destructive",
           onPress: async () => {
             try {
-              if (document.storagePath) {
-                await storage().ref(document.storagePath).delete();
-              }
-              await firestore()
-                .collection("users")
-                .doc(auth().currentUser.uid)
-                .collection("documents")
-                .doc(document.id)
-                .delete();
+              await deleteDocument(auth().currentUser.uid, document);
             } catch (error) {
               console.error("Silme hatası: ", error);
               Alert.alert("Hata", "Evrak silinirken bir sorun oluştu.");
@@ -119,7 +95,6 @@ const DocumentsScreen = ({ navigation }) => {
             },
           ]}
         >
-          {/* Sol Taraftaki İkon */}
           <View
             style={[
               styles.iconContainer,
@@ -133,7 +108,6 @@ const DocumentsScreen = ({ navigation }) => {
             />
           </View>
 
-          {/* Orta Kısımdaki İçerik */}
           <View style={styles.contentSection}>
             <Text
               numberOfLines={1}
@@ -148,7 +122,6 @@ const DocumentsScreen = ({ navigation }) => {
             </Text>
           </View>
 
-          {/* Sağ Taraftaki Silme Butonu */}
           <TouchableOpacity
             onPress={() => handleDelete(item)}
             style={styles.deleteButton}
@@ -209,7 +182,6 @@ const DocumentsScreen = ({ navigation }) => {
         />
       )}
 
-      {/* Yüzen Eylem Düğmesi (FAB) */}
       <Animated.View entering={FadeInUp.duration(500).delay(300)}>
         <TouchableOpacity
           style={[

@@ -5,10 +5,9 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
-  SafeAreaView,
   Platform,
 } from "react-native";
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import auth from "@react-native-firebase/auth";
 import Animated, {
   FadeInDown,
@@ -16,7 +15,6 @@ import Animated, {
   FadeOutUp,
 } from "react-native-reanimated";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-
 import imgTop from "../../assets/background.png";
 import imgLight from "../../assets/light.png";
 import { styles as originalStyles } from "./styles/LoginStyle";

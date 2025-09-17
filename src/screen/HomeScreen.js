@@ -100,9 +100,7 @@ const HomeScreen = () => {
         ]}
       >
         <Image
-          source={{
-            uri: "https://images.unsplash.com/photo-1506784983877-45594efa4cbe?q=80&w=2068&auto=format&fit=crop",
-          }}
+          source={require("../../assets/backgroundhome.jpg")}
           style={styles.background}
           resizeMode="cover"
         />

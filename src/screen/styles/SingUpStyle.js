@@ -43,7 +43,7 @@ export const styles = StyleSheet.create({
 
   form: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: "flex-start", 
     alignItems: "center",
     marginHorizontal: 16,
     marginVertical: 5,

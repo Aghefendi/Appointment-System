@@ -20,6 +20,7 @@ import "moment/locale/tr";
 import Animated, { FadeInUp, FadeInDown } from "react-native-reanimated";
 import { useSelector } from "react-redux";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import CustomAlert from "../component/CustomAlert";
 
 const EditAppointmentScreen = ({ route, navigation }) => {
   const { appointment } = route.params;
@@ -27,6 +28,7 @@ const EditAppointmentScreen = ({ route, navigation }) => {
 
   const [title, setTitle] = useState(appointment.title);
   const [notes, setNotes] = useState(appointment.notes);
+
   const [appointmentDate, setAppointmentDate] = useState(
     appointment.appointmentDate?.toDate
       ? appointment.appointmentDate.toDate()
@@ -34,6 +36,12 @@ const EditAppointmentScreen = ({ route, navigation }) => {
   );
   const [loading, setLoading] = useState(false);
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+  const [alertInfo, setAlertInfo] = useState({
+    title: "",
+    message: "",
+    type: "info",
+  });
+  const [alertVisible, setAlertVisible] = useState(false);
 
   moment.locale("tr");
 
@@ -46,17 +54,24 @@ const EditAppointmentScreen = ({ route, navigation }) => {
 
   const handleUpdateAppointment = async () => {
     if (!title.trim() || !appointmentDate) {
-      Alert.alert(
-        "Eksik Bilgi",
-        "Lütfen randevu başlığı ve tarihi alanlarını doldurun."
-      );
+      setAlertInfo({
+        title: "Hata",
+        message: "Lütfen randevu başlığı ve tarihi alanlarını doldurun.",
+        type: "error", // Gelişmiş bileşenin "type" prop'unu kullanarak hata ikonu gösterin
+      });
+      setAlertVisible(true);
       return;
     }
 
     setLoading(true);
     const userId = auth().currentUser?.uid;
     if (!userId) {
-      Alert.alert("Hata", "Geçerli bir kullanıcı oturumu bulunamadı.");
+      setAlertInfo({
+        title: "Hata",
+        message: "Geçerli bir kullanıcı oturumu bulunamadı",
+        type: "error", // Gelişmiş bileşenin "type" prop'unu kullanarak hata ikonu gösterin
+      });
+      setAlertVisible(true);
       setLoading(false);
       return;
     }
@@ -72,11 +87,23 @@ const EditAppointmentScreen = ({ route, navigation }) => {
           notes: notes.trim(),
           appointmentDate: firestore.Timestamp.fromDate(appointmentDate),
         });
-      Alert.alert("Başarılı", "Randevu başarıyla güncellendi.");
+
+      setAlertInfo({
+        title: "Başarılı",
+        message: "Randevu başarıyla güncellendi.",
+        type: "success",
+      });
+      setAlertVisible(true);
       navigation.goBack();
     } catch (error) {
       console.error("Güncelleme hatası:", error);
-      Alert.alert("Hata", "Randevu güncellenirken bir sorun oluştu.");
+
+      setAlertInfo({
+        title: "Hata",
+        message: "Randevu güncellenirken bir sorun oluştu.",
+        type: "error",
+      });
+      setAlertVisible(true);
     } finally {
       setLoading(false);
     }
@@ -251,9 +278,17 @@ const EditAppointmentScreen = ({ route, navigation }) => {
           mode="datetime"
           onConfirm={handleConfirm}
           onCancel={hideDatePicker}
-          date={appointmentDate || new Date()} 
+          date={appointmentDate || new Date()}
           confirmTextIOS="Onayla"
           cancelTextIOS="Vazgeç"
+        />
+        <CustomAlert
+          visible={alertVisible}
+          onClose={() => setAlertVisible(false)}
+          title={alertInfo.title}
+          message={alertInfo.message}
+          type={alertInfo.type}
+          buttons={[{ text: "Tamam" }]}
         />
       </KeyboardAvoidingView>
     </SafeAreaView>

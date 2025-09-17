@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
   SafeAreaView,
-  FlatList,
   View,
   Text,
   StyleSheet,
@@ -16,6 +15,11 @@ import "moment/locale/tr";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { useSelector } from "react-redux";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import { FlashList } from "@shopify/flash-list";
+import {
+  listenAppointments,
+  deleteAppointment,
+} from "../services/appointmentService";
 
 const AppointmentsScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
@@ -29,21 +33,13 @@ const AppointmentsScreen = ({ navigation }) => {
       setLoading(false);
       return;
     }
-    const subscriber = firestore()
-      .collection("users")
-      .doc(user.uid)
-      .collection("appointments")
-      .orderBy("appointmentDate", "asc")
-      .onSnapshot((querySnapshot) => {
-        const data = [];
-        querySnapshot.forEach((doc) => {
-          data.push({ id: doc.id, ...doc.data() });
-        });
-        setAppointments(data);
-        if (loading) setLoading(false);
-      });
 
-    return () => subscriber();
+    const unsubscribe = listenAppointments(user.uid, (data) => {
+      setAppointments(data);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const handleDelete = (id) => {
@@ -55,16 +51,13 @@ const AppointmentsScreen = ({ navigation }) => {
         {
           text: "Sil",
           style: "destructive",
-          onPress: () =>
-            firestore()
-              .collection("users")
-              .doc(auth().currentUser.uid)
-              .collection("appointments")
-              .doc(id)
-              .delete()
-              .catch((error) =>
-                Alert.alert("Hata", "Randevu silinirken bir sorun oluştu.")
-              ),
+          onPress: async () => {
+            try {
+              await deleteAppointment(auth().currentUser.uid, id);
+            } catch (error) {
+              Alert.alert("Hata", "Randevu silinirken bir sorun oluştu.");
+            }
+          },
         },
       ]
     );
@@ -105,7 +98,7 @@ const AppointmentsScreen = ({ navigation }) => {
             </Text>
           </View>
 
-          {/* Orta Kısımdaki İçerik */}
+       
           <View style={styles.contentSection}>
             <Text style={[styles.itemTitle, { color: theme.color }]}>
               {item.title}
@@ -123,7 +116,7 @@ const AppointmentsScreen = ({ navigation }) => {
             )}
           </View>
 
-          {/* Sağ Taraftaki Silme Butonu */}
+    
           <TouchableOpacity
             onPress={() => handleDelete(item.id)}
             style={styles.deleteButton}
@@ -175,7 +168,7 @@ const AppointmentsScreen = ({ navigation }) => {
           style={{ flex: 1 }}
         />
       ) : (
-        <FlatList
+        <FlashList
           data={appointments}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}
@@ -184,7 +177,6 @@ const AppointmentsScreen = ({ navigation }) => {
         />
       )}
 
-      {/* Yüzen Eylem Düğmesi (FAB) */}
       <Animated.View entering={FadeInUp.duration(500).delay(300)}>
         <TouchableOpacity
           style={[

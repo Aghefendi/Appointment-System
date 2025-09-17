@@ -81,6 +81,7 @@ Bu proje aynı zamanda bir **staj projesi** olup, modern mobil uygulama gelişti
 - **Profil Ekranı** → `ProfileScreen`
 - **Evrak Yükleme** → `UploadDocument` (Modal)
 - **Global State Yönetimi** → `store.js`, `themeSlice.js`
+- **Service** → `appointmentService.js`, `documentService.js`
 
 Bu yapı, **modüler**, **anlaşılır** ve **sürdürülebilir** bir kod mimarisi sunmaktadır.  
 Firebase entegrasyonu sayesinde ayrıca sunucu tarafı kod yazmaya gerek kalmamış, hızlı geliştirme mümkün olmuştur.

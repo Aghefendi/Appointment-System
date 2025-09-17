@@ -3,24 +3,27 @@ import {
   View,
   Text,
   StyleSheet,
-  Alert,
   ActivityIndicator,
-  Platform,
   TouchableOpacity,
   Animated,
   Easing,
 } from "react-native";
 import { pick } from "@react-native-documents/picker";
-import storage from "@react-native-firebase/storage";
-import firestore from "@react-native-firebase/firestore";
 import auth from "@react-native-firebase/auth";
-import RNFS from "react-native-fs";
 import { useSelector } from "react-redux";
+import CustomAlert from "../../component/CustomAlert";
+import { uploadDocument } from "../../services/documentService";
 
 const UploadDocument = ({ navigation }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [alertInfo, setAlertInfo] = useState({
+    title: "",
+    message: "",
+    type: "info",
+  });
+  const [alertVisible, setAlertVisible] = useState(false);
 
   const theme = useSelector((state) => state.theme.theme);
   const styles = createStyles(theme);
@@ -95,70 +98,61 @@ const UploadDocument = ({ navigation }) => {
       if (result) setSelectedFile(result);
     } catch (err) {
       if (err.code !== "DOCUMENT_PICKER_CANCELED") {
-        Alert.alert("Hata", "Dosya seçilirken bir sorun oluştu.");
+        setAlertInfo({
+          title: "Hata",
+          message: "Dosya seçilirken bir sorun oluştu.",
+          type: "error",
+        });
+        setAlertVisible(true);
       }
     }
   };
 
   const handleUpload = useCallback(async () => {
     if (!selectedFile) {
-      Alert.alert("Dosya Seçilmedi", "Lütfen önce bir dosya seçin.");
+      setAlertInfo({
+        title: "Hata",
+        message: "Lütfen önce dosya seçin.",
+        type: "error",
+      });
+      setAlertVisible(true);
       return;
     }
+
     const user = auth().currentUser;
     if (!user) {
-      Alert.alert(
-        "Giriş Yapılmadı",
-        "Dosya yüklemek için lütfen giriş yapınız."
-      );
+      setAlertInfo({
+        title: "Hata",
+        message: "Giriş yapılmadı veya oturum süresi doldu.",
+        type: "error",
+      });
+      setAlertVisible(true);
       return;
     }
 
     setLoading(true);
     setProgress(0);
 
-    let localFileUri = "";
     try {
-      const sourceUri = selectedFile.uri;
-      const fileName = selectedFile.name || `${Date.now()}.pdf`;
-      const destinationPath = `${RNFS.CachesDirectoryPath}/${fileName}`;
-      await RNFS.copyFile(sourceUri, destinationPath);
-      localFileUri = `file://${destinationPath}`;
+      await uploadDocument(user.uid, selectedFile, setProgress);
 
-      const storagePath = `documents/${user.uid}/${Date.now()}_${fileName}`;
-      const reference = storage().ref(storagePath);
-      const task = reference.putFile(destinationPath);
-
-      task.on("state_changed", (snap) => {
-        const pct = Math.round((snap.bytesTransferred / snap.totalBytes) * 100);
-        setProgress(pct);
+      setAlertInfo({
+        title: "Başarı",
+        message: "Evrağınız başarıyla yüklendi.",
+        type: "success",
       });
-
-      await task;
-      const url = await reference.getDownloadURL();
-      await firestore()
-        .collection("users")
-        .doc(user.uid)
-        .collection("documents")
-        .add({
-          name: fileName,
-          type: selectedFile.type,
-          size: selectedFile.size,
-          downloadURL: url,
-          storagePath,
-          createdAt: firestore.FieldValue.serverTimestamp(),
-        });
-
-      Alert.alert("Başarılı", "Evrağınız başarıyla yüklendi.");
+      setAlertVisible(true);
       navigation.goBack();
     } catch (error) {
       console.error(error);
-      Alert.alert("Yükleme Başarısız", error.message);
+      setAlertInfo({
+        title: "Hata",
+        message: "Yükleme başarısız oldu.",
+        type: "error",
+      });
+      setAlertVisible(true);
     } finally {
       setLoading(false);
-      if (localFileUri) {
-        RNFS.unlink(localFileUri.replace("file://", "")).catch(() => {});
-      }
     }
   }, [selectedFile, navigation]);
 
@@ -225,6 +219,15 @@ const UploadDocument = ({ navigation }) => {
         disabled={!selectedFile || loading}
         style={styles.uploadButton}
       />
+
+      <CustomAlert
+        visible={alertVisible}
+        onClose={() => setAlertVisible(false)}
+        title={alertInfo.title}
+        message={alertInfo.message}
+        type={alertInfo.type}
+        buttons={[{ text: "Tamam" }]}
+      />
     </View>
   );
 };
@@ -267,10 +270,7 @@ const createStyles = (theme) =>
       shadowRadius: 3.84,
       elevation: 5,
     },
-    disabledButton: {
-      backgroundColor: "#A9A9A9",
-      elevation: 0,
-    },
+    disabledButton: { backgroundColor: "#A9A9A9", elevation: 0 },
     customButtonText: {
       color: theme.buttonText || "white",
       fontSize: 16,
@@ -284,21 +284,14 @@ const createStyles = (theme) =>
       width: "90%",
       alignItems: "center",
     },
-    fileNameLabel: {
-      fontSize: 14,
-      color: theme.subtleText || "#888",
-    },
+    fileNameLabel: { fontSize: 14, color: theme.subtleText || "#888" },
     fileName: {
       marginTop: 5,
       fontSize: 16,
       fontWeight: "500",
       color: theme.color,
     },
-    progressContainer: {
-      marginTop: 30,
-      alignItems: "center",
-      width: "90%",
-    },
+    progressContainer: { marginTop: 30, alignItems: "center", width: "90%" },
     progressBarBackground: {
       width: "100%",
       height: 8,
@@ -307,17 +300,7 @@ const createStyles = (theme) =>
       overflow: "hidden",
       marginVertical: 10,
     },
-    progressBarFill: {
-      height: 8,
-      backgroundColor: theme.primary,
-    },
-    progressText: {
-      fontSize: 14,
-      color: theme.primary,
-      fontWeight: "bold",
-    },
-    uploadButton: {
-      marginTop: 20,
-      backgroundColor: theme.success,
-    },
+    progressBarFill: { height: 8, backgroundColor: theme.primary },
+    progressText: { fontSize: 14, color: theme.primary, fontWeight: "bold" },
+    uploadButton: { marginTop: 20, backgroundColor: theme.success },
   });

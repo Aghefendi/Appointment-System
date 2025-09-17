@@ -1,7 +1,8 @@
 import React from "react";
-import { View, FlatList, ActivityIndicator, Text } from "react-native";
+import { View, ActivityIndicator, Text } from "react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
 import CustomButton from "./CustomButton";
+import { FlashList } from "@shopify/flash-list";
 
 const ListScreen = ({
   loading,
@@ -28,7 +29,7 @@ const ListScreen = ({
           {emptyMessage}
         </Text>
       ) : (
-        <FlatList
+        <FlashList
           data={data}
           renderItem={renderItem}
           keyExtractor={(item) => item.id}

@@ -121,3 +121,5 @@ fastlane/test_output
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 ios/GoogleService-Info.plist
+# Diğer geçici dosyalar
+*.bak

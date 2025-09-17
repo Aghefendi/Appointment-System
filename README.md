@@ -18,8 +18,8 @@ Bu proje aynı zamanda bir **staj projesi** olup, modern mobil uygulama gelişti
 ![Register Screen](./assets/register.png)  
 ![Appointments Screen](./assets/appo.jpeg)  
 ![Documents Screen](./assets/documents.png)  
-![Profile Screen](./assets/profile.jpeg)
-![Add Appoinment](./assets/new_app.jpeg)
+![Profile Screen](./assets/profile.png)
+![Add Appoinment](./assets/appoinmentAdd.png)
 
 ---
 

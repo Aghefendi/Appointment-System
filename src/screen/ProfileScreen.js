@@ -68,7 +68,6 @@ const ProfileScreen = () => {
     const appointmentsColRef = userDocRef.collection("appointments");
     const documentsColRef = userDocRef.collection("documents");
 
-
     const unsubscribeUser = userDocRef.onSnapshot((snap) => {
       if (snap.exists) {
         const rawData = snap.data();
@@ -76,6 +75,7 @@ const ProfileScreen = () => {
       } else {
         dispatch(setUserData(null));
       }
+      dispatch(setLoading(false));
     });
 
     const unsubscribeAppointments = appointmentsColRef.onSnapshot((snap) => {

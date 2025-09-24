@@ -16,7 +16,7 @@ export const uploadDocument = async (userId, file, onProgress) => {
   let localFilePath = `${RNFS.CachesDirectoryPath}/${fileName}`;
 
   try {
-    // Android content:// URI çözümü
+   
     let sourcePath = file.uri;
     if (Platform.OS === "android" && file.uri.startsWith("content://")) {
       const destPath = `${RNFS.CachesDirectoryPath}/${fileName}`;
@@ -25,7 +25,7 @@ export const uploadDocument = async (userId, file, onProgress) => {
       sourcePath = destPath;
     }
 
-    // iOS ve normal dosya URI
+    
     if (Platform.OS === "ios" || sourcePath.startsWith("file://")) {
       await RNFS.copyFile(sourcePath, localFilePath);
     }

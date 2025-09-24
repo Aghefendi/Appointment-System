@@ -12,7 +12,6 @@ import {
   ActivityIndicator,
 } from "react-native";
 import auth from "@react-native-firebase/auth";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
 import moment from "moment";
 import "moment/locale/tr";
 import Animated, {
@@ -26,13 +25,13 @@ import { useSelector } from "react-redux";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import CustomAlert from "../component/CustomAlert";
 import { addAppointment } from "../services/appointmentService";
+import DatePicker from "react-native-date-picker";
 
 const AddAppointmentScreen = ({ navigation }) => {
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [appointmentDate, setAppointmentDate] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const theme = useSelector((state) => state.theme.theme);
   const [alertInfo, setAlertInfo] = useState({
     title: "",
@@ -40,6 +39,10 @@ const AddAppointmentScreen = ({ navigation }) => {
     type: "info",
   });
   const [alertVisible, setAlertVisible] = useState(false);
+
+  // DatePicker için state
+  const [open, setOpen] = useState(false);
+  const [date, setDate] = useState(new Date());
 
   moment.locale("tr");
 
@@ -53,13 +56,6 @@ const AddAppointmentScreen = ({ navigation }) => {
   };
   const onPressOut = () => {
     btnScale.value = withSpring(1, { stiffness: 200, damping: 15 });
-  };
-
-  const showDatePicker = () => setDatePickerVisibility(true);
-  const hideDatePicker = () => setDatePickerVisibility(false);
-  const handleConfirm = (date) => {
-    setAppointmentDate(date);
-    hideDatePicker();
   };
 
   const handleSaveAppointment = async () => {
@@ -206,7 +202,7 @@ const AddAppointmentScreen = ({ navigation }) => {
             <Text style={[styles.label, { color: theme.subtleText }]}>
               Tarih ve Saat
             </Text>
-            <TouchableOpacity activeOpacity={0.7} onPress={showDatePicker}>
+            <TouchableOpacity activeOpacity={0.7} onPress={() => setOpen(true)}>
               <View
                 style={[
                   styles.inputContainer,
@@ -279,15 +275,25 @@ const AddAppointmentScreen = ({ navigation }) => {
           </TouchableOpacity>
         </Animated.View>
 
-        <DateTimePickerModal
-          isVisible={isDatePickerVisible}
+        {/* DatePicker Modal */}
+        <DatePicker
+          modal
+          open={open}
+          date={date}
           mode="datetime"
-          onConfirm={handleConfirm}
-          onCancel={hideDatePicker}
+          locale="tr"
           minimumDate={new Date()}
-          confirmTextIOS="Onayla"
-          cancelTextIOS="Vazgeç"
+          title="Randevu Tarihi Seç"
+          confirmText="Onayla"
+          cancelText="Vazgeç"
+          onConfirm={(d) => {
+            setOpen(false);
+            setDate(d);
+            setAppointmentDate(d);
+          }}
+          onCancel={() => setOpen(false)}
         />
+
         <CustomAlert
           visible={alertVisible}
           onClose={() => setAlertVisible(false)}

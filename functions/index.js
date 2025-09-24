@@ -5,7 +5,7 @@ admin.initializeApp();
 
 exports.sendAppointmentReminders = onSchedule(
     {
-      schedule: "every 30 minutes",
+      schedule: "every 1 minutes",
       timeZone: "Europe/Istanbul",
       timeoutSeconds: 300,
       memory: "512MiB",
@@ -18,10 +18,8 @@ exports.sendAppointmentReminders = onSchedule(
         const oneHourLater = admin.firestore.Timestamp.fromDate(
             new Date(Date.now() + 60 * 60 * 1000),
         );
-
         const batch = admin.firestore().batch();
         const processedDocs = new Set();
-
         const snapshot = await admin
             .firestore()
             .collectionGroup("appointments")
@@ -29,12 +27,10 @@ exports.sendAppointmentReminders = onSchedule(
             .where("appointmentDate", ">=", now)
             .where("appointmentDate", "<=", oneHourLater)
             .get();
-
         if (snapshot.empty) {
           console.log("No upcoming appointments found.");
           return null;
         }
-
         const notificationPromises = snapshot.docs.map(async (doc) => {
           const {fcmToken, title, appointmentDate} = doc.data();
 

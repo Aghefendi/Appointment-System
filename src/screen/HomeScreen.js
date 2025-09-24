@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -15,6 +15,8 @@ import { useSelector, useDispatch } from "react-redux";
 import Octicons from "react-native-vector-icons/Octicons";
 import { toggleTheme } from "../store/themeSlice";
 import { Calendar } from "react-native-calendars";
+import { listenAppointments } from "../services/appointmentService";
+import auth from "@react-native-firebase/auth";
 
 const { width, height } = Dimensions.get("window");
 
@@ -22,10 +24,36 @@ const HomeScreen = () => {
   const { theme, mode } = useSelector((state) => state.theme);
   const dispatch = useDispatch();
 
+  const [markedDates, setMarkedDates] = useState({}); // randevular için
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const spinAnim = useRef(new Animated.Value(0)).current;
   const scrollAnim = useRef(new Animated.Value(0)).current;
 
+  // 🔹 Firebase’den randevuları dinle
+  useEffect(() => {
+    const userId = auth().currentUser?.uid;
+    if (!userId) return;
+
+    const unsubscribe = listenAppointments(userId, (appointments) => {
+      const marks = {};
+      appointments.forEach((item) => {
+        const date = item.appointmentDate.toDate();
+        const dateStr = date.toISOString().split("T")[0];
+        marks[dateStr] = {
+          marked: true,
+          dotColor: "white",
+          selected: true,
+          selectedColor: "blue",
+        };
+      });
+      setMarkedDates(marks);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // 🔹 Fade animasyonu
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -35,6 +63,7 @@ const HomeScreen = () => {
     }).start();
   }, [fadeAnim]);
 
+  // 🔹 Arka plan scroll animasyonu
   useEffect(() => {
     Animated.loop(
       Animated.timing(scrollAnim, {
@@ -46,21 +75,26 @@ const HomeScreen = () => {
     ).start();
   }, [scrollAnim]);
 
-  const onToggleTheme = () => {
-    dispatch(toggleTheme());
-    spinAnim.setValue(0);
-    Animated.timing(spinAnim, {
-      toValue: 1,
-      duration: 500,
-      easing: Easing.out(Easing.circle),
-      useNativeDriver: true,
-    }).start();
-  };
+  // 🔹 Spin animasyonu (sürekli)
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(spinAnim, {
+        toValue: 1,
+        duration: 1000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
 
   const spin = spinAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ["0deg", "360deg"],
   });
+
+  const onToggleTheme = () => {
+    dispatch(toggleTheme());
+  };
 
   const calendarThemeStyle = {
     backgroundColor: "transparent",
@@ -123,7 +157,7 @@ const HomeScreen = () => {
             { opacity: fadeAnim },
           ]}
         >
-          <Calendar key={mode} theme={calendarThemeStyle} />
+          <Calendar theme={calendarThemeStyle} markedDates={markedDates} />
         </Animated.View>
       </View>
 
@@ -136,7 +170,15 @@ const HomeScreen = () => {
           mode === "dark" ? "Açık" : "Karanlık"
         } moda geçirir`}
       >
-        <Animated.View style={{ transform: [{ rotate: spin }] }}>
+        <Animated.View
+          style={{
+            width: 32,
+            height: 32,
+            justifyContent: "center",
+            alignItems: "center",
+            transform: [{ rotate: spin }],
+          }}
+        >
           <Octicons
             name={mode === "dark" ? "moon" : "sun"}
             size={32}
@@ -151,30 +193,22 @@ const HomeScreen = () => {
 export default HomeScreen;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: "center",
-  },
+  container: { flex: 1, justifyContent: "center" },
   backgroundContainer: {
     position: "absolute",
     top: 0,
     left: 0,
-    width: width,
+    width,
     height: height * 2,
   },
-  background: {
-    width: "100%",
-    height: "100%",
-  },
+  background: { width: "100%", height: "100%" },
   contentContainer: {
     flex: 1,
     paddingHorizontal: 20,
     justifyContent: "space-around",
     paddingVertical: "15%",
   },
-  header: {
-    alignItems: "center",
-  },
+  header: { alignItems: "center" },
   title: {
     fontSize: 32,
     fontWeight: "bold",
@@ -183,16 +217,8 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 4,
   },
-  subtitle: {
-    fontSize: 18,
-    opacity: 0.9,
-    marginTop: 8,
-  },
-  calendarWrapper: {
-    borderRadius: 16,
-    padding: 10,
-    borderWidth: 1,
-  },
+  subtitle: { fontSize: 18, opacity: 0.9, marginTop: 8 },
+  calendarWrapper: { borderRadius: 16, padding: 10, borderWidth: 1 },
   button: {
     position: "absolute",
     bottom: 40,

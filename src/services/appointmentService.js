@@ -1,7 +1,7 @@
 import firestore from "@react-native-firebase/firestore";
 
 /**
- * Kullanıcıya randevu ekler
+ * Kullanıcıya randevu ekler (çakışma kontrolü ile)
  * @param {string} userId - Firebase kullanıcı UID
  * @param {Object} data - Randevu verisi
  * @param {string} data.title - Randevu başlığı
@@ -14,6 +14,27 @@ export const addAppointment = async (userId, data) => {
     throw new Error("Eksik randevu bilgisi.");
   }
 
+  const appointmentDate = data.appointmentDate;
+  const start = new Date(appointmentDate);
+  start.setSeconds(0, 0); // saniye/milisaniye sıfırla
+
+  const end = new Date(start);
+  end.setMinutes(end.getMinutes() + 30); // 30 dakikalık blok (istersen 60 yap)
+
+  // 🔎 Çakışma kontrolü
+  const snapshot = await firestore()
+    .collection("users")
+    .doc(userId)
+    .collection("appointments")
+    .where("appointmentDate", ">=", firestore.Timestamp.fromDate(start))
+    .where("appointmentDate", "<", firestore.Timestamp.fromDate(end))
+    .get();
+
+  if (!snapshot.empty) {
+    throw new Error("Bu tarih ve saat aralığında zaten bir randevunuz var.");
+  }
+
+  // ✅ Yeni randevu kaydet
   return await firestore()
     .collection("users")
     .doc(userId)
@@ -21,7 +42,7 @@ export const addAppointment = async (userId, data) => {
     .add({
       title: data.title.trim(),
       notes: data.notes?.trim() || "",
-      appointmentDate: firestore.Timestamp.fromDate(data.appointmentDate),
+      appointmentDate: firestore.Timestamp.fromDate(start),
       createdAt: firestore.FieldValue.serverTimestamp(),
     });
 };

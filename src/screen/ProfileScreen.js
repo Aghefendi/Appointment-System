@@ -47,6 +47,7 @@ const ProfileScreen = () => {
   const { loading, userData, appointmentCount, documentCount } = useSelector(
     (state) => state.profile
   );
+  const user = auth().currentUser;
 
   const scale = useSharedValue(1);
   const animatedBtnStyle = useAnimatedStyle(() => ({
@@ -61,7 +62,6 @@ const ProfileScreen = () => {
   };
 
   useEffect(() => {
-    const user = auth().currentUser;
     if (!user) return;
 
     const userDocRef = firestore().collection("users").doc(user.uid);
@@ -91,7 +91,7 @@ const ProfileScreen = () => {
       unsubscribeAppointments();
       unsubscribeDocuments();
     };
-  }, [dispatch]);
+  }, [dispatch, user]);
 
   const handleLogout = () => {
     auth()
@@ -261,7 +261,7 @@ const ProfileScreen = () => {
               <Text
                 style={[styles.infoText, { color: theme?.color || "#000" }]}
               >
-                {userData?.email}
+                {userData?.email || user?.email || "Belirtilmemiş"}
               </Text>
             </View>
           </View>
